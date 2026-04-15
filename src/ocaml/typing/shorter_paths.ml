@@ -304,26 +304,20 @@ let improve_lid env ~canon_path table kind lid =
   find_best_lid env ~canon_path table kind
   |> Option.fold ~none:lid ~some:Option.some
 
-type state =
-  { queue : Priority_queue.t;
-    not_in_env : Discourse_types.t;
-    table : Lid_path_set.t Path.Tbl.t
-  }
-let process_queue env state ~canon_path target_kind best =
+type state = { queue : Priority_queue.t; not_in_env : Discourse_types.t }
+let process_queue env state ~table ~canon_path target_kind best =
   let rec fill_by_level ~compare seq state best_lid =
     log ~title:"fill_by_level" "Current best: %a" Logger.fmt (fun f ->
         Format.pp_print_option Lid_path_set.pp_lid_path f best_lid);
     match seq () with
     | Seq.Nil ->
       log ~title:"fill_by_level" "Empty queue";
-      let best_path =
-        improve_lid env ~canon_path state.table target_kind best_lid
-      in
+      let best_path = improve_lid env ~canon_path table target_kind best_lid in
       (best_path, state)
     | Seq.Cons ((kind, next_lid, path), next) ->
       let next_level = compare next_lid < 0 in
       if next_level then begin
-        match improve_lid env ~canon_path state.table kind best_lid with
+        match improve_lid env ~canon_path table kind best_lid with
         | Some (best_lid, path) when compare_longidents best_lid next_lid < 0 ->
           log ~title:"fill_by_level"
             "Finished level and found a name shorter than the previous level:\n\
@@ -368,11 +362,11 @@ let process_queue env state ~canon_path target_kind best =
           (fun fmt -> Path.print fmt path);
         let () =
           let update =
-            match Path.Tbl.find_opt state.table canonical_path with
+            match Path.Tbl.find_opt table canonical_path with
             | None -> Lid_path_set.singleton item
             | Some set -> Lid_path_set.add item set
           in
-          Path.Tbl.replace state.table canonical_path update
+          Path.Tbl.replace table canonical_path update
         in
         (* And remove it from the queue *)
         let queue = Priority_queue.remove item state.queue in
@@ -390,7 +384,7 @@ let process_queue env state ~canon_path target_kind best =
         let not_in_env =
           Discourse_types.add lid (Type, path) state.not_in_env
         in
-        { state with queue; not_in_env }
+        { queue; not_in_env }
       end
     in
     fill_by_level ~compare:(compare_longidents lid) next state best_lid
@@ -417,6 +411,8 @@ let process_queue env state ~canon_path target_kind best =
 let path_masks_cache : (Longident.t * Path.t, Path.t) Hashtbl.t ref =
   Local_store.s_table Hashtbl.create 32
 
+(* Permet d'afficher un chemin malgré la limitation que on ne puisse afficher
+   que des paths et *)
 let rec path_mask (path : Path.t) (lid : Longident.t) : Path.t =
   match Hashtbl.find_opt !path_masks_cache (lid, path) with
   | Some path -> path
@@ -477,13 +473,14 @@ let shorten ~env ~initial ~canon_path kind =
       Format.pp_print_option Lid_path_set.pp_elt f best);
 
   (* Is there a better one in the queue ? *)
-  let best_lid, { queue = queue'; not_in_env = not_in_env'; _ } =
+  let best_lid, { queue = queue'; not_in_env = not_in_env' } =
     let not_in_env = !not_in_env in
-    process_queue env { queue; not_in_env; table } ~canon_path kind best
+    process_queue env { queue; not_in_env } ~table ~canon_path kind best
   in
 
   (* Empty the discourse *)
-  Discourse.set { discourse with paths = Discourse_types.empty };
+  (* Discourse.set { discourse with paths = Discourse_types.empty }; *)
+  (* TODO: why do we need to empty the discourse? *)
 
   (* Update the persistent queues and table *)
   priority_queue := queue';

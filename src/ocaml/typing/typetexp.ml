@@ -851,7 +851,7 @@ and transl_type_aux env ~row_context ~aliased ~policy mode styp =
   | Ptyp_constr(lid, stl) ->
       let (path, decl) = Env.lookup_type ~loc:lid.loc lid.txt env in
       let discourse = Discourse_types.singleton lid.txt (Type, path) in
-      Discourse.use_type env lid path;
+      Discourse.U.g := Discourse.U.use_type env lid path !Discourse.U.g;
       let stl =
         match stl with
         | [ {ptyp_desc=Ptyp_any None} as t ] when decl.type_arity > 1 ->

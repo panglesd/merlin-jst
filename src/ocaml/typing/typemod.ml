@@ -249,14 +249,15 @@ let extract_sig_functor_open funct_body env loc mty sig_acc =
 
 let type_open_ ?(used_slot=ref false) ?(toplevel=false) ovf env loc lid =
   let path, mode, newenv = Env.open_signature ~loc ~used_slot ~toplevel ovf lid env in
-  Discourse.use_module env lid path;
-  Discourse.open_module env path;
+  Discourse.U.g := Discourse.U.use_module env lid path !Discourse.U.g;
+  Discourse.U.open_module env path;
   path, mode, newenv
 
 let initial_env ~loc ~initially_opened_module
     ~open_implicit_modules =
   let env = Lazy.force Env.initial in
-  Discourse.add_initial_discourse ();
+  (* Discourse.add_initial_discourse (); *)
+  (* TODO: check above *)
   let open_module env m =
     let open Asttypes in
     let lid = {loc; txt = Longident.parse m } in
@@ -2423,7 +2424,7 @@ and transl_modtype_decl_aux env
   in
   let scope = Ctype.create_scope () in
   let (id, newenv) = Env.enter_modtype ~scope pmtd_name.txt decl env in
-  Discourse_types.add_ident Module_type id;
+  Discourse.define_modtype id;
   let mtd =
     {
      mtd_id=id;
