@@ -2,6 +2,9 @@ let log_section = "short-paths"
 let { Logger.log } = Logger.for_section log_section
 let { Logger.log = log_dbg } = Logger.for_section (log_section ^ "-dbg")
 
+let my_log_section = "my-short-paths"
+let { Logger.log = mylog } = Logger.for_section my_log_section
+
 module Out_type = struct
   (* This part is copied from upstream's [Out_type] *)
 
@@ -434,7 +437,7 @@ let rec path_mask (path : Path.t) (lid : Longident.t) : Path.t =
 let shorten ~env ~initial ~canon_path kind =
   let discourse = Discourse.get () in
   let queue, table = (!priority_queue, !canon_table) in
-  log_dbg ~title:"shorten" "Current discourse: %a\n%!" Logger.fmt (fun fmt ->
+  mylog ~title:"shorten" "Current discourse: %a\n%!" Logger.fmt (fun fmt ->
       Discourse.debug_print fmt);
   log_dbg ~title:"shorten" "Current queue: %a" Logger.fmt (fun fmt ->
       Format.pp_print_seq ~pp_sep:Format.pp_print_space Lid_path_set.pp_elt fmt
