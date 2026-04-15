@@ -89,6 +89,47 @@ This mocks the Async --include--> Async_kernel --exports--> Deferred
   $ $MERLIN single type-enclosing -position 3:5 \
   > -log-file - -log-section my-short-paths \
   > -filename test.ml < test.ml 
+  # my-short-paths - shorten
+  Current discourse: Size: 40 Let_syntax [Async!.Let_syntax;
+  Async_kernel__Deferred!.Let_syntax.Let_syntax];
+  Let_syntax.return [Async!.Let_syntax.return;
+  Async_kernel__Deferred!.Let_syntax.Let_syntax.return];
+  Deferred [Async_kernel__Deferred!; Async!.Deferred;
+  Async_kernel__!.Deferred]; Deferred.t [Async_kernel__Deferred!.t];
+  Deferred.Let_syntax [Async_kernel__Deferred!.Let_syntax;
+  Async!.Deferred.Let_syntax];
+  Deferred.Let_syntax.Let_syntax [Async_kernel__Deferred!.Let_syntax.Let_syntax;
+  Async!.Deferred.Let_syntax.Let_syntax];
+  Deferred.Let_syntax.Let_syntax.return [Async_kernel__Deferred!.Let_syntax.Let_syntax.return];
+  Async_kernel [Async_kernel!];
+  Async_kernel.Let_syntax [Async_kernel!.Let_syntax;
+  Async_kernel__Deferred!.Let_syntax.Let_syntax];
+  Async_kernel.Let_syntax.return [Async_kernel__Deferred!.Let_syntax.Let_syntax.return];
+  Async_kernel.Deferred [Async_kernel__Deferred!; Async_kernel!.Deferred];
+  Async_kernel.Deferred.t [Async_kernel__Deferred!.t];
+  Async_kernel.Deferred.Let_syntax [Async_kernel__Deferred!.Let_syntax];
+  Async [Async!]; Async.Let_syntax [Async!.Let_syntax];
+  Async.Deferred [Async!.Deferred] Async_kernel__Deferred! -> [Deferred;
+  Async_kernel.Deferred]; Async!.Deferred -> [Deferred; Async_kernel.Deferred];
+  Async!.Let_syntax -> [Let_syntax; Async_kernel.Let_syntax];
+  Async_kernel!.Deferred -> [Deferred];
+  Async_kernel!.Let_syntax -> [Deferred.Let_syntax.Let_syntax];
+  Async_kernel__!.Deferred -> [Async.Deferred; Async_kernel.Deferred];
+  Async_kernel__Deferred!.Let_syntax -> [Deferred.Let_syntax];
+  Async_kernel__Deferred!.Let_syntax.Let_syntax -> [Let_syntax;
+  Async.Let_syntax; Async_kernel.Let_syntax;
+  Deferred.Let_syntax.Let_syntax]
+  # my-short-paths - shorten
+  Current discourse: Size: 0  Async_kernel__Deferred! -> [Deferred; Async_kernel.Deferred];
+  Async!.Deferred -> [Deferred; Async_kernel.Deferred];
+  Async!.Let_syntax -> [Let_syntax; Async_kernel.Let_syntax];
+  Async_kernel!.Deferred -> [Deferred];
+  Async_kernel!.Let_syntax -> [Deferred.Let_syntax.Let_syntax];
+  Async_kernel__!.Deferred -> [Async.Deferred; Async_kernel.Deferred];
+  Async_kernel__Deferred!.Let_syntax -> [Deferred.Let_syntax];
+  Async_kernel__Deferred!.Let_syntax.Let_syntax -> [Let_syntax;
+  Async.Let_syntax; Async_kernel.Let_syntax;
+  Deferred.Let_syntax.Let_syntax]
   {
     "class": "return",
     "value": [

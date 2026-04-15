@@ -840,4 +840,4 @@ let builtin_values =
 
 let builtin_idents = List.rev !builtin_idents
 
-let discourse () = !discourse
+let discourse () = (* !discourse *) Discourse_types.empty
