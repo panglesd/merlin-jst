@@ -135,12 +135,6 @@ module U = struct
       (Format.pp_print_seq ~pp_sep pp_lid_paths)
       (Lid_map.to_seq t)
 
-  let debug_print _fmt = ()
-  (* Format.fprintf fmt "Size: %i@;%a@;%a" *)
-  (*   (Lid_map.cardinal !g.u_paths) *)
-  (*   pp_map !g.u_paths pp_substs !g.substs *)
-  (* TODO: do *)
-
   let log_usage ?loc kind path =
     log ~title:"use" "Use %a\n%!" Logger.fmt (fun fmt ->
         Format.fprintf fmt "%s %a %a"
@@ -762,3 +756,8 @@ let use_label _env (_label : _ Types.gen_label_description) =
         u_paths = Lid_map.union (fun _ x _ -> Some x) !g.u_paths label_discourse
       }
   end
+
+let debug_print fmt =
+  let g = D.of_U !g in
+  Format.fprintf fmt "Size: %i@;%a@;%a" (Lid_trie.size g.paths) pp g.paths
+    pp_substs g.substs
