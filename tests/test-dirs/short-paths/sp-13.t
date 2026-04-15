@@ -80,13 +80,14 @@ This mocks the Async --include--> Async_kernel --exports--> Deferred
   $ $OCAMLC -c test.ml  -I async -I async_kernel
 
   $ cat >.merlin <<'EOF'
-  > FLG -short-paths
+  > FLG -short-paths -nostdlib
   > B .
   > B async
   > B async_kernel
   > EOF
 
   $ $MERLIN single type-enclosing -position 3:5 \
+  > -log-file - -log-section my-short-paths \
   > -filename test.ml < test.ml 
   {
     "class": "return",
