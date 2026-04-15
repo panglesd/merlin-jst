@@ -20,9 +20,84 @@ $ $MERLIN single dump -what parsetree -filename foo.ml < foo.ml
 
   $ echo "FLG -short-paths" > .merlin
 
-> -log-file - -log-section discourse,type-enclosing,short-paths 
-  $ $MERLIN single type-enclosing -position 8:14 \
+  $ $MERLIN single type-enclosing -nostdlib -position 8:14 \
+  > -log-file - -log-section my-short-paths \
   > -filename foo.ml < foo.ml 
+  # my-short-paths - shorten
+  Current discourse: Discourse {
+    size = 28;
+    paths =
+    u [u/14[10]];
+    t [t/5[2];
+    t/8[6]];
+    int [int/1!];
+    S [S/7[4]];
+    M [M/6[3];
+    M/9[7]];
+    Foo [Bar/12[5];
+    Foo/13[9]];
+    Foo.t [Bar/12[5].t;
+    Foo/13[9].t];
+    Foo.M [Bar/12[5].M];
+    Empty [Empty/4[1]];
+    Bar [Bar/12[5]];
+    Bar.t [Bar/12[5].t];
+    Bar.M [Bar/12[5].M];
+    substs =
+    [Empty/4[1] -> [M];
+    Bar/12[5] -> [Foo];
+    Foo/13[9] -> [Bar]]
+    }
+  # my-short-paths - shorten
+  Current discourse: Discourse {
+    size = 28;
+    paths =
+    u [u/14[10]];
+    t [t/5[2];
+    t/8[6]];
+    int [int/1!];
+    S [S/7[4]];
+    M [M/6[3];
+    M/9[7]];
+    Foo [Bar/12[5];
+    Foo/13[9]];
+    Foo.t [Bar/12[5].t;
+    Foo/13[9].t];
+    Foo.M [Bar/12[5].M];
+    Empty [Empty/4[1]];
+    Bar [Bar/12[5]];
+    Bar.t [Bar/12[5].t];
+    Bar.M [Bar/12[5].M];
+    substs =
+    [Empty/4[1] -> [M];
+    Bar/12[5] -> [Foo];
+    Foo/13[9] -> [Bar]]
+    }
+  # my-short-paths - shorten
+  Current discourse: Discourse {
+    size = 28;
+    paths =
+    u [u/14[10]];
+    t [t/5[2];
+    t/8[6]];
+    int [int/1!];
+    S [S/7[4]];
+    M [M/6[3];
+    M/9[7]];
+    Foo [Bar/12[5];
+    Foo/13[9]];
+    Foo.t [Bar/12[5].t;
+    Foo/13[9].t];
+    Foo.M [Bar/12[5].M];
+    Empty [Empty/4[1]];
+    Bar [Bar/12[5]];
+    Bar.t [Bar/12[5].t];
+    Bar.M [Bar/12[5].M];
+    substs =
+    [Empty/4[1] -> [M];
+    Bar/12[5] -> [Foo];
+    Foo/13[9] -> [Bar]]
+    }
   {
     "class": "return",
     "value": [
@@ -59,7 +134,7 @@ $ $MERLIN single dump -what parsetree -filename foo.ml < foo.ml
           "line": 8,
           "col": 14
         },
-        "type": "type u = Bar.t",
+        "type": "type u = u",
         "tail": "no"
       }
     ],

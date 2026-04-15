@@ -63,21 +63,20 @@ some point.
   > EOF
 
   $ $MERLIN_TEST_OCAML_PATH/bin/ocamlobjinfo -quiet -discourse async/async.cmi
-  Discourse: <longident> [<paths>]
+  Discourse:
   Deferred: 
   Deferred.t: 
   Deferred.create: t [t/276[1]]
 
   $ $MERLIN_TEST_OCAML_PATH/bin/ocamlobjinfo -quiet -discourse async_kernel/async_kernel.cmi
-  Discourse: <longident> [<paths>]
+  Discourse:
   Deferred: alias: Deferred [Async_kernel__!.Deferred]
     Deferred [Async_kernel__!.Deferred]
   
 
   $ $MERLIN_TEST_OCAML_PATH/bin/ocamlobjinfo -quiet -discourse async_kernel/async_kernel__Deferred.cmi
-  Discourse: <longident> [<paths>]
-  t: 
-  create: t [t/276[1]]
+  Fatal error: exception Sys_error("async_kernel/async_kernel__Deferred.cmi: No such file or directory")
+  [2]
 
   $ $MERLIN single type-enclosing -position 3:5 \
   > -filename test.ml < test.ml 

@@ -1,3 +1,9 @@
+(* TODO: sort the log mess *)
+let my_log_section = "my-short-paths-2"
+let { Logger.log = log2 } = Logger.for_section my_log_section
+
+(* TODO: make it (or check it is made) explicit that all rules are used *)
+
 (*
 
 We call U the set of all paths used directly in a file:
@@ -49,19 +55,79 @@ let log_section = "discourse"
 let { Logger.log } = Logger.for_section log_section
 
 module U = struct
-  type u_item = { item : Item.t; env : Env.t option }
-  let pp_u_item ppf { item = _, item; env } =
-    Format.fprintf ppf "%a %s" Path.print item
-      (match env with
-      | None -> "without env"
-      | Some _ -> "with env")
+  type u_item =
+    { item : Item.t;
+      env : Env.t option
+          (* Items added by "defined" rules (U2 and U3) do not need an env, as
+             they are in the compilation unit (and so U1 will add all paths
+             mentioned in them). TODO: Is that true for U3?
+
+             Items added by the "used" rule (U1) need an environment, to be able
+             to find them later in the translation U -> D, when applying D rules
+             such as D4, D6, D8, ... *)
+    }
   module ItemSet = Set.Make (struct
     type t = u_item
 
-    let compare i1 i2 = Item.compare i1.item i2.item
+    let compare i1 i2 =
+      match (i1.env, i2.env) with
+      | None, None -> Item.compare i1.item i2.item
+      | Some _, None -> -1
+      | None, Some _ -> 1
+      | Some env1, Some env2 when env1 == env2 -> Item.compare i1.item i2.item
+      (* This breaks the antisymmetry of order. TODO: is it a big deal?
+
+         Maybe, the exact same path in different envs needs only to be added
+         once (any env allowing to find the item will find the same item)
+
+         Ideally, we have no path duplicate, and prefer the ones with env to the
+         one without. *)
+      | Some _, Some _ -> -1
   end)
 
   type u = { u_paths : ItemSet.t Lid_map.t; substs : Lid_set.t Path.Map.t }
+
+  let pp_u fmt u =
+    let open Format in
+    let pp_sep fmt () = fprintf fmt ";@ " in
+    let pp_env fmt env =
+      match env with
+      | None -> pp_print_string fmt "without env"
+      | Some _ -> pp_print_string fmt "with env"
+    in
+    let pp_u_item fmt { item = kind, path; env } =
+      fprintf fmt "@[<1>{item = (%s,@ %a);@ env = %a}@]"
+        (Shape.Sig_component_kind.to_string kind)
+        Path.print path pp_env env
+    in
+    let pp_item_set fmt set =
+      fprintf fmt "@[<1>[%a]@]"
+        (pp_print_list ~pp_sep pp_u_item)
+        (ItemSet.elements set)
+    in
+    let pp_u_paths_binding fmt (lid, items) =
+      fprintf fmt "@[<2>%a ->@ %a@]" Pprintast.longident lid pp_item_set items
+    in
+    let pp_u_paths fmt map =
+      fprintf fmt "@[<v>[%a]@]"
+        (pp_print_list ~pp_sep pp_u_paths_binding)
+        (Lid_map.bindings map)
+    in
+    let pp_lid_set fmt set =
+      fprintf fmt "@[<1>[%a]@]"
+        (pp_print_list ~pp_sep Pprintast.longident)
+        (Lid_set.elements set)
+    in
+    let pp_substs_binding fmt (path, lids) =
+      fprintf fmt "@[<2>%a ->@ %a@]" Path.print path pp_lid_set lids
+    in
+    let pp_substs fmt map =
+      fprintf fmt "@[<v>[%a]@]"
+        (pp_print_list ~pp_sep pp_substs_binding)
+        (Path.Map.bindings map)
+    in
+    fprintf fmt "@[<v 2>{ u_paths =@ %a;@ substs =@ %a }@]" pp_u_paths u.u_paths
+      pp_substs u.substs
 
   let add_item_set lid item item_set =
     Lid_map.update lid
@@ -99,21 +165,8 @@ module U = struct
   (*   let d = !g in *)
   (*   g := { d with u_paths = Lid_map.union (Predef.discourse ()) d.paths } *)
 
-  let pp_substs fmt substs =
-    let pp_sep ppf () = Format.fprintf ppf ";@;" in
-    let pp_v fmt (p, s) =
-      Format.fprintf fmt "%a -> [%a]" Path.print p
-        (Format.pp_print_list ~pp_sep Pprintast.longident)
-        s
-    in
-    let substs =
-      Path.Map.bindings substs
-      |> List.map (fun (p, s) -> (p, Lid_set.elements s))
-    in
-    Format.pp_print_list ~pp_sep pp_v fmt substs
-
   let fold_on_common_lid_and_path_segments ~init ~kind ~f (lid, path) =
-    (* TODO : is it always true that paths prefixes are always Module ?*)
+    (* TODO : is it always true that paths prefixes are always Module? Yes!? *)
     let rec aux acc kind ((lid, path) : Longident.t * Path.t) =
       let acc = f acc kind (lid, path) in
       match (lid, path) with
@@ -125,15 +178,6 @@ module U = struct
       | _ -> acc
     in
     aux init kind (lid, path)
-
-  let pp_map fmt t =
-    let pp_lid_paths ppf (lid, paths) =
-      Format.fprintf ppf "%a %a" Pprintast.longident lid pp_u_item paths
-    in
-    let pp_sep fmt () = Format.fprintf fmt ";@ " in
-    Format.fprintf fmt "%a"
-      (Format.pp_print_seq ~pp_sep pp_lid_paths)
-      (Lid_map.to_seq t)
 
   let log_usage ?loc kind path =
     log ~title:"use" "Use %a\n%!" Logger.fmt (fun fmt ->
@@ -175,7 +219,6 @@ module U = struct
 
   let define kind ?root_path ?root_lid id =
     if_record_usage @@ fun () ->
-    (* let path, _ = env_lookup lid env in *)
     let lid, path = lid_and_path_of_ident ?root_path ?root_lid id in
     log ~title:"def" "Define %s %a [%a]\n%!"
       (Shape.Sig_component_kind.to_string kind)
@@ -190,10 +233,11 @@ module U = struct
           add_item_set lid { item = (kind, path); env = None } discourse.u_paths
       }
 
-  (* ??: Pourquoi avons-nous besoin de define_signature? (Et non seulement des
-     [define_{value;type;module;module_type}]) ? Ne risque-t-on pas d'inclure
-     deux fois?  Vérifier que l'on a bien envie de récurser dans les
-     signatures. *)
+  (* TODO: ??: It is not clear to me how the define functions are supposed to be
+     called, to avoid duplicates, given that [define_module] will recurse. Do we
+     only call [define_module] on the "compilation unit" module? It seems that
+     [define_{type;module;modtype}] are called from the outside, but not
+     [define_value] *)
 
   let rec define_signature ?root_path ?root_lid sg =
     log ~title:"def" "Define signature";
@@ -201,15 +245,13 @@ module U = struct
 
   and define_component ?root_path ?root_lid sig_item =
     if record_usages then
-      (* let lident id = Longident.Lident (Ident.name id) in *)
       match sig_item with
       | Types.Sig_type (id, _, _, _) -> define_type ?root_path ?root_lid id
-      | Types.Sig_value (id, _, _) -> define_value ?root_path ?root_lid id
-      | Types.Sig_typext (_, _, _, _) -> ()
-      | Types.Sig_module (id, _, md, _, _) ->
-        define_module ?root_path ?root_lid md id
-      | Types.Sig_modtype (id, _, _) -> define_modtype ?root_path ?root_lid id
-      | Types.Sig_class (_, _, _, _) | Types.Sig_class_type (_, _, _, _) ->
+      | Sig_value (id, _, _) -> define_value ?root_path ?root_lid id
+      | Sig_typext (_, _, _, _) -> ()
+      | Sig_module (id, _, md, _, _) -> define_module ?root_path ?root_lid md id
+      | Sig_modtype (id, _, _) -> define_modtype ?root_path ?root_lid id
+      | Sig_class (_, _, _, _) | Sig_class_type (_, _, _, _) ->
         (* TODO: do *) ()
 
   and define_type ?root_path ?root_lid id = define ?root_path ?root_lid Type id
@@ -221,8 +263,6 @@ module U = struct
     define Module ?root_path ?root_lid id;
     let root_lid, root_path = lid_and_path_of_ident ?root_path ?root_lid id in
     match decl.md_type with
-    (* TODO: Check what to move into D.of_U from the original define_module
-       function *)
     | Mty_alias path -> add_subst path root_lid
     | Mty_signature module_type ->
       define_signature ~root_path ~root_lid module_type
@@ -253,7 +293,8 @@ module U = struct
           add_subst path lid;
           define Module ~root_path id
         | Sig_modtype (id, _, _) -> define_modtype ~root_path id
-        | Sig_class (_, _, _, _) | Sig_class_type (_, _, _, _) -> (* TODO *) ())
+        | Sig_class (_, _, _, _) | Sig_class_type (_, _, _, _) ->
+          (* TODO: do *) ())
       (Subst.Lazy.force_signature_once sg)
 
   (* TODO This should be done lazyly*)
@@ -262,6 +303,7 @@ module U = struct
       log ~title:"def" "Open module %a\n%!" Logger.fmt (fun fmt ->
           Path.print fmt path);
       try
+        (* TODO: should we do this lazily to? *)
         (* When opening we need to traverse the aliases to get the components *)
         let root_path = Env.normalize_module_path None env path in
         let md = Env.find_module_lazy root_path env in
@@ -281,6 +323,9 @@ module U = struct
     let loc = lid.Location.loc in
     let f acc kind (lid, path) =
       let () = log_usage ~loc kind path in
+      (* TODO: this try-with is still there but the thing that can cause an
+         exception was moved during the refactor. Check that there is a tru-with
+         where the code was moved, or add it *)
       try
         let u_paths =
           add_item_set lid { item = (kind, path); env = Some env } acc.u_paths
@@ -290,23 +335,25 @@ module U = struct
     in
     fold_on_common_lid_and_path_segments ~init:t ~kind ~f (lid.txt, path)
 
-  let use_module env lid path = add_used env Module lid path
+  let use_module env lid path =
+    let md = Env.find_module_lazy path env in
+    let () =
+      match md.md_discourse_alias with
+      | None ->
+        log2 ~title:"shorten" "Current used: %a\n%!" Logger.fmt (fun fmt ->
+            Format.fprintf fmt "No discourse alias for %a,%a at pos %a"
+              Pprintast.longident lid.Location.txt Path.print path
+              Location.print_loc md.md_loc)
+      | Some _ ->
+        log2 ~title:"shorten" "Current used: %a\n%!" Logger.fmt (fun fmt ->
+            Format.fprintf fmt "THERE IS A discourse alias for %a,%a at pos %a"
+              Pprintast.longident lid.txt Path.print path Location.print_loc
+              md.md_loc)
+    in
+    add_used env Module lid path
   let use_modtype env lid path = add_used env Module_type lid path
   let use_type env lid path = add_used env Type lid path
   let use_value env lid path = add_used env Value lid path
-
-  (* TODO: this should be done in D.of_U *)
-  (* let use_constructor (constr : Types.constructor_description) = *)
-  (*   if record_usages then begin *)
-  (*     (\* If a constructor is in U then any paths used in its type are in D. *\) *)
-  (*     g := { !g with paths = Lid_trie.union !g.paths constr.cstr_discourse } *)
-  (*   end *)
-
-  (* let use_label (label : _ Types.gen_label_description) = *)
-  (*   if record_usages then begin *)
-  (*     (\* If a label is in U then any paths used in its type are in D. *\) *)
-  (*     g := { !g with paths = Lid_trie.union !g.paths label.lbl_discourse } *)
-  (*   end *)
 end
 
 module D = struct
@@ -346,11 +393,10 @@ module D = struct
   *)
 
   (* TODO: check if that is necessary
-     This might not be necessary if we have a clearer two-step process ?
+     This might not be necessary ~~if~~ now that we have a clearer two-step process ?
      Currently the handling of aliases can create loops. *)
   let already_used : (Path.t, unit) Hashtbl.t = Hashtbl.create 256
 
-  (* TODO *)
   let special_rule_for_aliases env { paths; substs } u_next path alias_lid
       alias_path =
     try
@@ -399,10 +445,9 @@ module D = struct
         in
         function
         | Subst.Lazy.Sig_value (id, _, _) -> (add Value id, substs)
-        | Subst.Lazy.Sig_type (id, _, _, _) -> (add Type id, substs)
-        | Subst.Lazy.Sig_typext (id, _, _, _) ->
-          (add Extension_constructor id, substs)
-        | Subst.Lazy.Sig_module (id, _, _, _, _) ->
+        | Sig_type (id, _, _, _) -> (add Type id, substs)
+        | Sig_typext (id, _, _, _) -> (add Extension_constructor id, substs)
+        | Sig_module (id, _, _, _, _) ->
           let md = Env.find_module_lazy (pdot id) env in
           let paths = add Module id in
           let substs =
@@ -422,11 +467,15 @@ module D = struct
             | _ -> substs
           in
           (paths, substs)
-        | Subst.Lazy.Sig_modtype (id, _, _) -> (add Module_type id, substs)
-        | Subst.Lazy.Sig_class (id, _, _, _) -> (add Class id, substs)
-        | Subst.Lazy.Sig_class_type (id, _, _, _) -> (add Class_type id, substs))
+        | Sig_modtype (id, _, _) -> (add Module_type id, substs)
+        | Sig_class (id, _, _, _) -> (add Class id, substs)
+        | Sig_class_type (id, _, _, _) -> (add Class_type id, substs))
       (paths, substs)
       (Subst.Lazy.force_signature_once sig_)
+
+  (* TODO: see if we can do better with the accumulator ([d] and [u_next]):
+     sometimes it is represented as a couple and sometimes as two distinct
+     arguments, preventing the more readable folds *)
 
   let module_consequences { paths; substs } u_next env lid path :
       discourse * U.u =
@@ -434,8 +483,17 @@ module D = struct
       let md = Env.find_module_lazy path env in
       let { paths; substs }, u_next =
         match md.md_discourse_alias with
-        | None -> ({ paths; substs }, u_next)
+        | None ->
+          log2 ~title:"shorten" "Current used: %a\n%!" Logger.fmt (fun fmt ->
+              Format.fprintf fmt "No discourse alias for %a,%a at pos %a"
+                Pprintast.longident lid Path.print path Location.print_loc
+                md.md_loc);
+
+          ({ paths; substs }, u_next)
         | Some (alias_lid, (_, alias_path)) ->
+          log2 ~title:"shorten" "Current used: %a\n%!" Logger.fmt (fun fmt ->
+              Format.fprintf fmt "THERE IS A DA for %a,%a" Pprintast.longident
+                lid Path.print path);
           special_rule_for_aliases env { paths; substs } u_next path alias_lid
             alias_path
       in
@@ -457,15 +515,16 @@ module D = struct
              TODO now that we have md_discourse_aliases, this might be redundant
              ? *)
           let path' = Env.normalize_module_path None env p in
-          (* TODO: I've removed it but ... ? *)
+          (* TODO: Check, this might not be the same as the code before the
+             rebase. *)
           let u_next =
             U.use_module env
               { Location.txt = lid; loc = Location.none }
-              (* TODO: sort the location issue *)
+              (* TODO: sort out the location issue *)
               path' u_next
             (* add_path_to_discourse env { paths; substs } Module lid path'  *)
           in
-          (* TODO: refactor that with [add_substs] *)
+          (* TODO: refactor [substs] below that with [add_substs] *)
           let substs =
             log ~title:"add_path_to_discourse" "New substitution 1 %a -> %a"
               Logger.fmt
@@ -490,6 +549,7 @@ module D = struct
 
   let consequences d u_next (longident, { U.item = kind, path; env }) =
     match (kind, env) with
+    | _, None -> (d, u_next)
     | Module_type, Some env ->
       let mtd = Env.find_modtype_lazy path env in
       (* D8. If a module type path is in U then any paths used in its definition
@@ -518,7 +578,7 @@ module D = struct
   let of_U u =
     let is_empty u = Lid_map.is_empty u.U.u_paths in
     let rec add_u_to_d d u =
-      let d, next_u =
+      let d, u_next =
         Lid_map.to_seq u.U.u_paths
         |> Seq.fold_left
              (fun (d, u_next) (lid, (x : U.ItemSet.t)) ->
@@ -530,11 +590,13 @@ module D = struct
       let d =
         { d with substs = Path.Map.union_merge Lid_set.union d.substs u.substs }
       in
-      if is_empty next_u then d else add_u_to_d d next_u
+      if is_empty u_next then d
+      else (
+        log2 ~title:"shorten" "Next U: %a\n%!" Logger.fmt (fun fmt ->
+            Format.fprintf fmt "%a" U.pp_u u_next);
+        add_u_to_d d u_next)
     in
-    add_u_to_d
-      { paths = Lid_trie.empty; substs = (* u.U.substs *) Path.Map.empty }
-      u
+    add_u_to_d { paths = Lid_trie.empty; substs = Path.Map.empty } u
 end
 
 include U
@@ -544,195 +606,13 @@ let use_modtype env lid path = g := add_used env Module_type lid path !g
 let use_type env lid path = g := add_used env Type lid path !g
 let use_value env lid path = g := add_used env Value lid path !g
 
-let get () = D.of_U !g
+(* We recompute D from [U] every time we call [get].
 
-(* (\* This might not be necessary if we have a clearer two-step process ? *)
-(*    Currently the handling of aliases can create loops. *\) *)
-(* let already_used : (Path.t, unit) Hashtbl.t = Hashtbl.create 256 *)
-
-(* open U *)
-
-(* (\** [add_path_to_discourse] adds one path from U to the Discourse, eventually *)
-(*     adding the additionnal paths described by the rules for D. TODO this could *)
-(*     and probably should be done lazily. *)
-
-(*     TODO:Q what about rule D11 ? If a path is in D and it includes another module *)
-(*           path within it, then that module path is also in D. Should we consider *)
-(*           only [Papply] paths or all path components for addition to D ?  *\) *)
-(* let rec add_path_to_discourse ?(for_open = false) env discourse kind lid path = *)
-(*   (\* let log = log ~title:"add_path_to_discourse" in *\) *)
-(*   log ~title:"add_path_to_discourse" "Adding %s %a %a" *)
-(*     (Shape.Sig_component_kind.to_string kind) *)
-(*     Logger.fmt *)
-(*     (fun fmt -> Pprintast.longident fmt lid) *)
-(*     Logger.fmt *)
-(*     (fun fmt -> Path.print fmt path); *)
-(*   let paths = Lid_trie.add lid (kind, path) discourse.paths in *)
-(*   let paths, substs = *)
-(*     let substs = discourse.substs in *)
-(*     match kind with *)
-(*     | Module -> *)
-(*       (\* TODO This should probably be done lazily *\) *)
-(*       let md = Env.find_module_lazy path env in *)
-(*       let { paths; substs } = *)
-(*         match md.md_discourse_alias with *)
-(*         | None -> { paths; substs } *)
-(*         | Some (alias_lid, (_, alias_path)) -> begin *)
-(*           try *)
-(*             let path', _ = Env.find_module_by_name_lazy alias_lid.txt env in *)
-(*             log ~title:"add_path_to_discourse" "Adding alias: %a %a %a" *)
-(*               Logger.fmt *)
-(*               (Fun.flip Pprintast.longident alias_lid.txt) *)
-(*               Logger.fmt *)
-(*               (Fun.flip Path.print alias_path) *)
-(*               Logger.fmt *)
-(*               (Fun.flip Path.print path'); *)
-
-(*             let substs = *)
-(*               log ~title:"add_path_to_discourse" *)
-(*                 "New substitution 1' %a -> %a (%a)" Logger.fmt *)
-(*                 (Fun.flip Path.print path) Logger.fmt *)
-(*                 (Fun.flip Pprintast.longident alias_lid.txt) *)
-(*                 Logger.fmt *)
-(*                 (Fun.flip Location.print_loc alias_lid.loc); *)
-(*               Path.Map.update path *)
-(*                 (function *)
-(*                   | None -> Some (Lid_set.singleton alias_lid.txt) *)
-(*                   | Some lids -> Some (Lid_set.add alias_lid.txt lids)) *)
-(*                 substs *)
-(*             in *)
-(*             if Hashtbl.mem already_used path' then { paths; substs } *)
-(*             else begin *)
-(*               Hashtbl.add already_used path' (); *)
-(*               add_used env Module alias_lid path' { paths; substs } *)
-(*             end *)
-(*           with Not_found -> { paths; substs } *)
-(*         end *)
-(*       in *)
-(*       (\* D5. If a module path is in U and its module description was written then *)
-(*          the paths used in that description are in D *\) *)
-(*       let paths = Lid_trie.union paths md.md_discourse in *)
-(*       begin *)
-(*         match md.md_type with *)
-(*         | Mty_alias p -> *)
-(*           (\* D12. If a module path m in D - note D not U - is a module alias *)
-(*              with target n and another path p in D includes n within it, then *)
-(*              the path obtained by substituting the m for n in p is also in D. *)
-
-(*              We accumulate such substitution and will apply them when shortening *)
-(*              a path. *\) *)
-(*           (\* We have to follow aliases to be able to add module components to *)
-(*              the discourse. *)
-
-(*              TODO now that we have md_discourse_aliases, this might be redundant *)
-(*              ? *\) *)
-(*           let path' = Env.normalize_module_path None env p in *)
-(*           let { paths; substs } = *)
-(*             add_path_to_discourse env { paths; substs } Module lid path' *)
-(*           in *)
-(*           let substs = *)
-(*             log ~title:"add_path_to_discourse" "New substitution 1 %a -> %a" *)
-(*               Logger.fmt *)
-(*               (Fun.flip Path.print path') *)
-(*               Logger.fmt *)
-(*               (Fun.flip Pprintast.longident lid); *)
-(*             Path.Map.update path' *)
-(*               (function *)
-(*                 | None -> Some (Lid_set.singleton lid) *)
-(*                 | Some lids -> Some (Lid_set.add lid lids)) *)
-(*               substs *)
-(*           in *)
-(*           (paths, substs) *)
-(*         | Mty_signature s -> *)
-(*           let ldot id = *)
-(*             if for_open then lid else Longident.Ldot (lid, Ident.name id) *)
-(*           in *)
-(*           let pdot id = Path.Pdot (path, Ident.name id) in *)
-(*           (\* D3. If a module path is in U then all the paths of its subcomponents *)
-(*              are in D *\) *)
-(*           List.fold_left *)
-(*             (fun (paths, substs) -> *)
-(*               let add kind id = *)
-(*                 log ~title:"add_path_to_discourse" *)
-(*                   "Adding signature component %s %a (%a)" *)
-(*                   (Shape.Sig_component_kind.to_string kind) *)
-(*                   Logger.fmt *)
-(*                   (fun fmt -> Ident.print fmt id) *)
-(*                   Logger.fmt *)
-(*                   (Fun.flip Path.print (pdot id)); *)
-(*                 Lid_trie.add (ldot id) (kind, pdot id) paths *)
-(*               in *)
-(*               function *)
-(*               | Subst.Lazy.Sig_value (id, _, _) -> (add Value id, substs) *)
-(*               | Subst.Lazy.Sig_type (id, _, _, _) -> (add Type id, substs) *)
-(*               | Subst.Lazy.Sig_typext (id, _, _, _) -> *)
-(*                 (add Extension_constructor id, substs) *)
-(*               | Subst.Lazy.Sig_module (id, _, _, _, _) -> *)
-(*                 let md = Env.find_module_lazy (pdot id) env in *)
-(*                 let paths = add Module id in *)
-(*                 let substs = *)
-(*                   match md.md_type with *)
-(*                   | Mty_alias path' -> *)
-(*                     let lid = ldot id in *)
-(*                     log ~title:"add_path_to_discourse" *)
-(*                       "New substitution 2 %a -> %a" Logger.fmt *)
-(*                       (Fun.flip Path.print path') *)
-(*                       Logger.fmt *)
-(*                       (Fun.flip Pprintast.longident lid); *)
-(*                     Path.Map.update path' *)
-(*                       (function *)
-(*                         | None -> Some (Lid_set.singleton lid) *)
-(*                         | Some lids -> Some (Lid_set.add lid lids)) *)
-(*                       substs *)
-(*                   | _ -> substs *)
-(*                 in *)
-(*                 (paths, substs) *)
-(*               | Subst.Lazy.Sig_modtype (id, _, _) -> (add Module_type id, substs) *)
-(*               | Subst.Lazy.Sig_class (id, _, _, _) -> (add Class id, substs) *)
-(*               | Subst.Lazy.Sig_class_type (id, _, _, _) -> *)
-(*                 (add Class_type id, substs)) *)
-(*             (paths, substs) *)
-(*             (Subst.Lazy.force_signature_once s) *)
-(*         | _ -> (paths, substs) *)
-(*       end *)
-(*     | Module_type -> *)
-(*       let mtd = Env.find_modtype_lazy path env in *)
-(*       (\* D8. If a module type path is in U then any paths used in its definition *)
-(*          are in *\) *)
-(*       (Lid_trie.union paths mtd.mtd_discourse, substs) *)
-(*     | Value -> *)
-(*       (\* D4. If a value path is in U and its value description was written by a user - *)
-(*          as opposed to being inferred - then the paths used in that description are *)
-(*          in D. *\) *)
-(*       let vd = Env.find_value path env in *)
-(*       (Lid_trie.union paths vd.val_discourse, substs) *)
-(*     | Type -> *)
-(*       (\* D6. If a type path is in U then any paths used in its equation or *)
-(*          representation are in D. *\) *)
-(*       let td = Env.find_type path env in *)
-(*       (Lid_trie.union paths td.type_discourse, substs) *)
-(*     | _ -> (paths, substs) *)
-(*   in *)
-(*   { paths; substs } *)
-
-(* (\** [add_used] adds all parts of a used path to the Discourse (U1, D2) *\) *)
-(* and add_used env kind lid path t = *)
-(*   let loc = lid.Location.loc in *)
-(*   let f acc kind (lid, path) = *)
-(*     let () = log_usage ~loc kind path in *)
-(*     try add_path_to_discourse env acc kind lid path *)
-(*     with Not_found | Env.Error (Lookup_error _) -> acc *)
-(*   in *)
-(*   fold_on_common_lid_and_path_segments ~init:t ~kind ~f (lid.txt, path) *)
-
-(* let add_used env kind lid path = *)
-(*   if record_usages then g := add_used env kind lid path !g *)
-
-(* (\* Rule U1: Any path occurring in the file is in U *\) *)
-(* let use_module env lid path = add_used env Module lid path *)
-(* let use_modtype env lid path = add_used env Module_type lid path *)
-(* let use_type env lid path = add_used env Type lid path *)
-(* let use_value env lid path = add_used env Value lid path *)
+   TODO: I wonder if we can do better? *)
+let get () =
+  log2 ~title:"shorten" "Current used: %a\n%!" Logger.fmt (fun fmt ->
+      Format.fprintf fmt "%a" U.pp_u !g);
+  D.of_U !g
 
 let use_constructor _env (_constr : Types.constructor_description) =
   (* if record_usages then begin *)
@@ -740,12 +620,13 @@ let use_constructor _env (_constr : Types.constructor_description) =
   (*   g := { !g with paths = Lid_trie.union !g.paths constr.cstr_discourse } *)
   (* end *)
   ()
-(* TODO *)
+(* TODO: do *)
 
 let use_label _env (_label : _ Types.gen_label_description) =
   if record_usages then begin
     (* If a label is in U then any paths used in its type are in D. *)
     let label_discourse =
+      (* TODO: do *)
       Lid_map.empty
       (* let trie = label.lbl_discourse in *)
       (* let seq = Lid_trie.to_seq trie in *)
@@ -757,7 +638,27 @@ let use_label _env (_label : _ Types.gen_label_description) =
       }
   end
 
+(* Thanks you Gemini for generating this pretty-printer for me. It is more
+   readable than voodoo's one ^^ *)
 let debug_print fmt =
-  let g = D.of_U !g in
-  Format.fprintf fmt "Size: %i@;%a@;%a" (Lid_trie.size g.paths) pp g.paths
-    pp_substs g.substs
+  let open Format in
+  let d = D.of_U !g in
+  let pp_sep fmt () = fprintf fmt ";@ " in
+  let pp_lid_set fmt set =
+    fprintf fmt "@[<1>[%a]@]"
+      (pp_print_list ~pp_sep Pprintast.longident)
+      (Lid_set.elements set)
+  in
+  let pp_substs_binding fmt (path, lids) =
+    fprintf fmt "@[<2>%a ->@ %a@]" Path.print path pp_lid_set lids
+  in
+  let pp_substs fmt map =
+    if Path.Map.is_empty map then fprintf fmt "[]"
+    else
+      fprintf fmt "@[<v>[%a]@]"
+        (pp_print_list ~pp_sep pp_substs_binding)
+        (Path.Map.bindings map)
+  in
+  fprintf fmt
+    "@[<v 2>Discourse {@;size = %i;@;paths =@ %a;@;substs =@ %a@;<-2>}@]"
+    (Lid_trie.size d.paths) pp d.paths pp_substs d.substs

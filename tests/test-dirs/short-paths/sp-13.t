@@ -11,7 +11,7 @@ This mocks the Async --include--> Async_kernel --exports--> Deferred
 
   $ $OCAMLC -c async_kernel__.ml -no-alias-deps 2>/dev/null
   $ $MERLIN_TEST_OCAML_PATH/bin/ocamlobjinfo -quiet -discourse async_kernel__.cmi
-  Discourse: <longident> [<paths>]
+  Discourse:
   Deferred: alias: Async_kernel__Deferred [Async_kernel__Deferred!]
     Async_kernel__Deferred [Async_kernel__Deferred!]
   
@@ -20,7 +20,7 @@ This mocks the Async --include--> Async_kernel --exports--> Deferred
   
   $ cat >deferred0.ml <<'EOF'
   > type +'a t = 'a
-  > let create : 'a -> 'a t = Fun.id
+  > let create : 'a -> 'a t = fun x -> x
   > EOF
 
   $ cat >deferred0.mli <<'EOF'
@@ -62,7 +62,7 @@ This mocks the Async --include--> Async_kernel --exports--> Deferred
 
   $ $OCAMLC -c async.ml -I ../async_kernel
   $ $MERLIN_TEST_OCAML_PATH/bin/ocamlobjinfo -quiet -discourse async.cmi
-  Discourse: <longident> [<paths>]
+  Discourse:
   Deferred: alias: Async_kernel.Deferred [Async_kernel!.Deferred]
     Deferred [Async_kernel__!.Deferred]
   
@@ -87,49 +87,156 @@ This mocks the Async --include--> Async_kernel --exports--> Deferred
   > EOF
 
   $ $MERLIN single type-enclosing -position 3:5 \
-  > -log-file - -log-section my-short-paths \
+  > -log-file - -log-section my-short-paths-2 \
   > -filename test.ml < test.ml 
-  # my-short-paths - shorten
-  Current discourse: Size: 40 Let_syntax [Async!.Let_syntax;
-  Async_kernel__Deferred!.Let_syntax.Let_syntax];
-  Let_syntax.return [Async!.Let_syntax.return;
-  Async_kernel__Deferred!.Let_syntax.Let_syntax.return];
-  Deferred [Async_kernel__Deferred!; Async!.Deferred;
-  Async_kernel__!.Deferred]; Deferred.t [Async_kernel__Deferred!.t];
-  Deferred.Let_syntax [Async_kernel__Deferred!.Let_syntax;
-  Async!.Deferred.Let_syntax];
-  Deferred.Let_syntax.Let_syntax [Async_kernel__Deferred!.Let_syntax.Let_syntax;
-  Async!.Deferred.Let_syntax.Let_syntax];
-  Deferred.Let_syntax.Let_syntax.return [Async_kernel__Deferred!.Let_syntax.Let_syntax.return];
-  Async_kernel [Async_kernel!];
-  Async_kernel.Let_syntax [Async_kernel!.Let_syntax;
-  Async_kernel__Deferred!.Let_syntax.Let_syntax];
-  Async_kernel.Let_syntax.return [Async_kernel__Deferred!.Let_syntax.Let_syntax.return];
-  Async_kernel.Deferred [Async_kernel__Deferred!; Async_kernel!.Deferred];
-  Async_kernel.Deferred.t [Async_kernel__Deferred!.t];
-  Async_kernel.Deferred.Let_syntax [Async_kernel__Deferred!.Let_syntax];
-  Async [Async!]; Async.Let_syntax [Async!.Let_syntax];
-  Async.Deferred [Async!.Deferred] Async_kernel__Deferred! -> [Deferred;
-  Async_kernel.Deferred]; Async!.Deferred -> [Deferred; Async_kernel.Deferred];
-  Async!.Let_syntax -> [Let_syntax; Async_kernel.Let_syntax];
-  Async_kernel!.Deferred -> [Deferred];
-  Async_kernel!.Let_syntax -> [Deferred.Let_syntax.Let_syntax];
-  Async_kernel__!.Deferred -> [Async.Deferred; Async_kernel.Deferred];
-  Async_kernel__Deferred!.Let_syntax -> [Deferred.Let_syntax];
-  Async_kernel__Deferred!.Let_syntax.Let_syntax -> [Let_syntax;
-  Async.Let_syntax; Async_kernel.Let_syntax;
-  Deferred.Let_syntax.Let_syntax]
-  # my-short-paths - shorten
-  Current discourse: Size: 0  Async_kernel__Deferred! -> [Deferred; Async_kernel.Deferred];
-  Async!.Deferred -> [Deferred; Async_kernel.Deferred];
-  Async!.Let_syntax -> [Let_syntax; Async_kernel.Let_syntax];
-  Async_kernel!.Deferred -> [Deferred];
-  Async_kernel!.Let_syntax -> [Deferred.Let_syntax.Let_syntax];
-  Async_kernel__!.Deferred -> [Async.Deferred; Async_kernel.Deferred];
-  Async_kernel__Deferred!.Let_syntax -> [Deferred.Let_syntax];
-  Async_kernel__Deferred!.Let_syntax.Let_syntax -> [Let_syntax;
-  Async.Let_syntax; Async_kernel.Let_syntax;
-  Deferred.Let_syntax.Let_syntax]
+  # my-short-paths-2 - shorten
+  Current used: No discourse alias for Async,Async! at pos File "_none_", line 1
+  # my-short-paths-2 - shorten
+  Current used: { u_paths =
+    [Async -> [{item = (module, Async!); env = with env}];
+    Deferred -> [{item = (module, Async!.Deferred); env = without env}];
+    Let_syntax ->
+      [{item = (module, Async!.Let_syntax); env = with env};
+       {item = (module, Async!.Let_syntax); env = without env}];
+    Let_syntax.return ->
+      [{item = (value, Async!.Let_syntax.return); env = with env}]];
+    substs =
+    [Async!.Deferred -> [Deferred];
+    Async!.Let_syntax -> [Let_syntax]] }
+  # my-short-paths-2 - shorten
+  Current used: No discourse alias for Async,Async! at pos File "_none_", line 1
+  # my-short-paths-2 - shorten
+  Current used: THERE IS A DA for Let_syntax,Async!.Let_syntax
+  # my-short-paths-2 - shorten
+  Current used: THERE IS A discourse alias for Async_kernel.Let_syntax,Async_kernel!.Let_syntax at pos File "deferred.ml", line 4, characters 2-66
+  # my-short-paths-2 - shorten
+  Current used: No discourse alias for Let_syntax,Async_kernel__Deferred!.Let_syntax.Let_syntax at pos File "deferred.ml", line 4, characters 2-66
+  # my-short-paths-2 - shorten
+  Next U: { u_paths =
+    [Async_kernel -> [{item = (module, Async_kernel!); env = with env}];
+    Let_syntax ->
+      [{item = (module, Async_kernel__Deferred!.Let_syntax.Let_syntax);
+        env = with env}];
+    Async_kernel.Let_syntax ->
+      [{item = (module, Async_kernel!.Let_syntax); env = with env}]];
+    substs =
+    [] }
+  # my-short-paths-2 - shorten
+  Current used: No discourse alias for Async_kernel,Async_kernel! at pos File "_none_", line 1
+  # my-short-paths-2 - shorten
+  Current used: No discourse alias for Let_syntax,Async_kernel__Deferred!.Let_syntax.Let_syntax at pos File "deferred.ml", line 4, characters 2-66
+  # my-short-paths-2 - shorten
+  Current used: THERE IS A DA for Async_kernel.Let_syntax,Async_kernel!.Let_syntax
+  # my-short-paths-2 - shorten
+  Current used: No discourse alias for Deferred.Let_syntax.Let_syntax,Async!.Deferred.Let_syntax.Let_syntax at pos File "deferred.ml", line 4, characters 2-66
+  # my-short-paths-2 - shorten
+  Current used: No discourse alias for Async_kernel.Let_syntax,Async_kernel__Deferred!.Let_syntax.Let_syntax at pos File "deferred.ml", line 4, characters 2-66
+  # my-short-paths-2 - shorten
+  Next U: { u_paths =
+    [Async_kernel ->
+       [{item = (module, Async_kernel__Deferred!.Let_syntax); env = with env}];
+    Deferred -> [{item = (module, Async!.Deferred); env = with env}];
+    Async_kernel.Let_syntax ->
+      [{item = (module, Async_kernel__Deferred!.Let_syntax.Let_syntax);
+        env = with env}];
+    Deferred.Let_syntax ->
+      [{item = (module, Async!.Deferred.Let_syntax); env = with env}];
+    Deferred.Let_syntax.Let_syntax ->
+      [{item = (module, Async!.Deferred.Let_syntax.Let_syntax); env = with env}]];
+    substs =
+    [] }
+  # my-short-paths-2 - shorten
+  Current used: No discourse alias for Async_kernel,Async_kernel__Deferred!.Let_syntax at pos File "deferred.ml", line 3, characters 0-98
+  # my-short-paths-2 - shorten
+  Current used: THERE IS A DA for Deferred,Async!.Deferred
+  # my-short-paths-2 - shorten
+  Current used: THERE IS A discourse alias for Async_kernel.Deferred,Async_kernel!.Deferred at pos File "async_kernel.ml", line 1, characters 0-26
+  # my-short-paths-2 - shorten
+  Current used: No discourse alias for Deferred,Async_kernel__Deferred! at pos File "_none_", line 1
+  # my-short-paths-2 - shorten
+  Current used: No discourse alias for Async_kernel.Let_syntax,Async_kernel__Deferred!.Let_syntax.Let_syntax at pos File "deferred.ml", line 4, characters 2-66
+  # my-short-paths-2 - shorten
+  Current used: No discourse alias for Deferred.Let_syntax,Async!.Deferred.Let_syntax at pos File "deferred.ml", line 3, characters 0-98
+  # my-short-paths-2 - shorten
+  Current used: No discourse alias for Deferred.Let_syntax,Async_kernel__Deferred!.Let_syntax at pos File "deferred.ml", line 3, characters 0-98
+  # my-short-paths-2 - shorten
+  Current used: No discourse alias for Deferred.Let_syntax.Let_syntax,Async!.Deferred.Let_syntax.Let_syntax at pos File "deferred.ml", line 4, characters 2-66
+  # my-short-paths-2 - shorten
+  Current used: No discourse alias for Deferred.Let_syntax.Let_syntax,Async_kernel__Deferred!.Let_syntax.Let_syntax at pos File "deferred.ml", line 4, characters 2-66
+  # my-short-paths-2 - shorten
+  Next U: { u_paths =
+    [Async_kernel -> [{item = (module, Async_kernel!); env = with env}];
+    Deferred -> [{item = (module, Async_kernel__Deferred!); env = with env}];
+    Async_kernel.Deferred ->
+      [{item = (module, Async_kernel!.Deferred); env = with env}];
+    Deferred.Let_syntax ->
+      [{item = (module, Async_kernel__Deferred!.Let_syntax); env = with env}];
+    Deferred.Let_syntax.Let_syntax ->
+      [{item = (module, Async_kernel__Deferred!.Let_syntax.Let_syntax);
+        env = with env}]];
+    substs =
+    [] }
+  # my-short-paths-2 - shorten
+  Current used: No discourse alias for Async_kernel,Async_kernel! at pos File "_none_", line 1
+  # my-short-paths-2 - shorten
+  Current used: No discourse alias for Deferred,Async_kernel__Deferred! at pos File "_none_", line 1
+  # my-short-paths-2 - shorten
+  Current used: THERE IS A DA for Async_kernel.Deferred,Async_kernel!.Deferred
+  # my-short-paths-2 - shorten
+  Current used: THERE IS A discourse alias for Deferred,Async!.Deferred at pos File "async_kernel.ml", line 1, characters 0-26
+  # my-short-paths-2 - shorten
+  Current used: No discourse alias for Async_kernel.Deferred,Async_kernel__Deferred! at pos File "_none_", line 1
+  # my-short-paths-2 - shorten
+  Current used: No discourse alias for Deferred.Let_syntax,Async_kernel__Deferred!.Let_syntax at pos File "deferred.ml", line 3, characters 0-98
+  # my-short-paths-2 - shorten
+  Current used: No discourse alias for Deferred.Let_syntax.Let_syntax,Async_kernel__Deferred!.Let_syntax.Let_syntax at pos File "deferred.ml", line 4, characters 2-66
+  # my-short-paths-2 - shorten
+  Next U: { u_paths =
+    [Deferred -> [{item = (module, Async!.Deferred); env = with env}];
+    Async_kernel.Deferred ->
+      [{item = (module, Async_kernel__Deferred!); env = with env}]];
+    substs =
+    [] }
+  # my-short-paths-2 - shorten
+  Current used: THERE IS A DA for Deferred,Async!.Deferred
+  # my-short-paths-2 - shorten
+  Current used: No discourse alias for Deferred,Async_kernel__Deferred! at pos File "_none_", line 1
+  # my-short-paths-2 - shorten
+  Current used: No discourse alias for Async_kernel.Deferred,Async_kernel__Deferred! at pos File "_none_", line 1
+  # my-short-paths-2 - shorten
+  Next U: { u_paths =
+    [Deferred -> [{item = (module, Async_kernel__Deferred!); env = with env}]];
+    substs =
+    [] }
+  # my-short-paths-2 - shorten
+  Current used: No discourse alias for Deferred,Async_kernel__Deferred! at pos File "_none_", line 1
+  # my-short-paths-2 - shorten
+  Current used: { u_paths =
+    [Async -> [{item = (module, Async!); env = with env}];
+    Deferred -> [{item = (module, Async!.Deferred); env = without env}];
+    Let_syntax ->
+      [{item = (module, Async!.Let_syntax); env = with env};
+       {item = (module, Async!.Let_syntax); env = without env}];
+    Let_syntax.return ->
+      [{item = (value, Async!.Let_syntax.return); env = with env}]];
+    substs =
+    [Async!.Deferred -> [Deferred];
+    Async!.Let_syntax -> [Let_syntax]] }
+  # my-short-paths-2 - shorten
+  Current used: No discourse alias for Async,Async! at pos File "_none_", line 1
+  # my-short-paths-2 - shorten
+  Current used: THERE IS A DA for Let_syntax,Async!.Let_syntax
+  # my-short-paths-2 - shorten
+  Current used: No discourse alias for Let_syntax,Async_kernel__Deferred!.Let_syntax.Let_syntax at pos File "deferred.ml", line 4, characters 2-66
+  # my-short-paths-2 - shorten
+  Next U: { u_paths =
+    [Let_syntax ->
+       [{item = (module, Async_kernel__Deferred!.Let_syntax.Let_syntax);
+         env = with env}]];
+    substs =
+    [] }
+  # my-short-paths-2 - shorten
+  Current used: No discourse alias for Let_syntax,Async_kernel__Deferred!.Let_syntax.Let_syntax at pos File "deferred.ml", line 4, characters 2-66
   {
     "class": "return",
     "value": [
