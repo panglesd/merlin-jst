@@ -360,7 +360,13 @@ module U = struct
             (Fun.flip Ident.print id);
           let lid, path = lid_and_path_of_ident ~root_path id in
           add_subst path lid;
-          define Module ~from:`Open ~root_path id
+          g :=
+            add_item lid
+              { item = (Module, path);
+                env = Some env;
+                disambiguator = Disambiguate_id.get_id ()
+              }
+              !g
         | Sig_modtype (id, _, _) ->
           log ~title:"U3" "U3: module type %a brought in scope by open"
             Logger.fmt (Fun.flip Ident.print id);
