@@ -233,6 +233,20 @@ module U = struct
     in
     aux init kind (lid, path)
 
+  (* If a path is in D and it includes another module path within it, then that
+     module path is also in D.*)
+  let add_all_components acc paths =
+    let seq = Lid_trie.to_seq paths in
+    Seq.fold_left
+      (fun acc (lid, paths) ->
+        Paths.fold
+          (fun (kind, path) init ->
+            fold_on_common_lid_and_path_segments ~init ~kind
+              ~f:(fun acc kind (lid, path) -> Lid_trie.add lid (kind, path) acc)
+              (lid, path))
+          paths acc)
+      acc seq
+
   let add_subst path lid =
     log ~title:"subst" "subst: %a -> %a (open/alias defined in file)" Logger.fmt
       (Fun.flip Path.print path) Logger.fmt
@@ -328,7 +342,7 @@ module U = struct
      just to make sure they do.
   *)
 
-  let define_signature_for_open ~root_path (sg : Subst.Lazy.signature) =
+  let define_signature_for_open env ~root_path (sg : Subst.Lazy.signature) =
     List.iter
       (fun sig_item ->
         match sig_item with
@@ -366,7 +380,7 @@ module U = struct
         let root_path = Env.normalize_module_path None env path in
         let md = Env.find_module_lazy root_path env in
         match md.md_type with
-        | Mty_signature sg -> define_signature_for_open ~root_path sg
+        | Mty_signature sg -> define_signature_for_open env ~root_path sg
         | _ -> ()
       with Not_found -> ()
     end
@@ -575,12 +589,14 @@ module D = struct
 
       (* D5. If a module path is in U and its module description was written then
          the paths used in that description are in D *)
+      (* TODO : If a path is in D and it includes another module path within it,
+         then that module path is also in D. *)
       log ~title:"D5" "D5: merging discourse of module %a" Logger.fmt
         (Fun.flip Pprintast.longident lid);
       let paths = Lid_trie.union paths md.md_discourse in
       begin
         match md.md_type with
-        | Mty_alias p ->
+        | Mty_alias path' ->
           (* D12. If a module path m in D - note D not U - is a module alias
              with target n and another path p in D includes n within it, then
              the path obtained by substituting the m for n in p is also in D.
@@ -592,7 +608,7 @@ module D = struct
 
              TODO now that we have md_discourse_aliases, this might be redundant
              ? *)
-          let path' = Env.normalize_module_path None env p in
+          let path' = Env.normalize_module_path None env path' in
           (* TODO: Check, this might not be the same as the code before the
              rebase. *)
           let u_next =
@@ -636,12 +652,16 @@ module D = struct
          are in *)
       log ~title:"D8" "D8: merging discourse of module type %a" Logger.fmt
         (Fun.flip Pprintast.longident longident);
+      (* TODO : If a path is in D and it includes another module path within it,
+         then that module path is also in D. *)
       ({ d with paths = Lid_trie.union d.paths mtd.mtd_discourse }, u_next)
     | Module, Some env -> module_consequences d u_next env longident path
     | Value, Some env ->
       (* D4. If a value path is in U and its value description was written by a user -
          as opposed to being inferred - then the paths used in that description are
          in D. *)
+      (* TODO : If a path is in D and it includes another module path within it,
+         then that module path is also in D. *)
       let vd = Env.find_value path env in
       log ~title:"D4" "D4: merging discourse of value %a" Logger.fmt
         (Fun.flip Pprintast.longident longident);
@@ -649,7 +669,11 @@ module D = struct
     | Type, Some env ->
       (* D6. If a type path is in U then any paths used in its equation or
          representation are in D. *)
+      (* TODO : If a path is in D and it includes another module path within it,
+         then that module path is also in D. *)
       let td = Env.find_type path env in
+      (* What does it mean when such a path is just an ident that is local to
+         another module ?*)
       log ~title:"D6" "D6: merging discourse of type %a" Logger.fmt
         (Fun.flip Pprintast.longident longident);
       ({ d with paths = Lid_trie.union d.paths td.type_discourse }, u_next)
