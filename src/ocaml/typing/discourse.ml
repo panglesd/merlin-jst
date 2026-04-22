@@ -326,7 +326,7 @@ module U = struct
     define ~from Module ?root_path ?root_lid id;
     let root_lid, root_path = lid_and_path_of_ident ?root_path ?root_lid id in
     match decl.md_type with
-    | Mty_alias path -> add_subst path root_lid
+    | Mty_ident path | Mty_alias path -> add_subst path root_lid
     | Mty_signature module_type ->
       define_signature ~from ~root_path ~root_lid module_type
     | _ -> ()
