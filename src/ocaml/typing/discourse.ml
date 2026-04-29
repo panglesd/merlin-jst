@@ -334,7 +334,7 @@ module U = struct
      just to make sure they do.
   *)
 
-  let define_signature_for_open env ~root_path (sg : Subst.Lazy.signature) =
+  let define_signature_for_open _env ~root_path (sg : Subst.Lazy.signature) =
     List.iter
       (fun sig_item ->
         match sig_item with
@@ -352,13 +352,16 @@ module U = struct
             (Fun.flip Ident.print id);
           let lid, path = lid_and_path_of_ident ~root_path id in
           add_subst path lid;
-          g :=
-            add_item lid
-              { item = (Module, path);
-                env = Some env;
-                disambiguator = Disambiguate_id.get_id ()
-              }
-              !g
+          define ~from:`Open Module ~root_path id
+          (* TODO Adding to U here fixes a few issues but we would prefer not to
+             do it. *)
+          (* g := *)
+          (*   add_item lid *)
+          (*     { item = (Module, path); *)
+          (*       env = Some env; *)
+          (*       disambiguator = Disambiguate_id.get_id () *)
+          (*     } *)
+          (*     !g *)
         | Sig_modtype (id, _, _) ->
           log ~title:"U3" "U3: module type %a brought in scope by open"
             Logger.fmt (Fun.flip Ident.print id);
