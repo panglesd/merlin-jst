@@ -20,6 +20,11 @@ module Lid_set = Set.Make (struct
   let compare a b = compare_longidents a b
 end)
 
+module Lid_map = Map.Make (struct
+  type t = Longident.t
+  let compare a b = compare_longidents a b
+end)
+
 module Item = struct
   type t = Shape.Sig_component_kind.t * Path.t
 
@@ -157,10 +162,9 @@ let singleton lid path = Lid_trie.trie_of_lid lid (Paths.singleton path)
 let pp = Lid_trie.pp_seq
 
 type discourse = { paths : t; substs : Lid_set.t Path.Map.t }
-let empty_discourse = { paths = empty; substs = Path.Map.empty }
-let g = Local_store.s_ref empty_discourse
 
-let add_ident kind id =
-  let lid = Longident.Lident (Ident.name id) in
-  let path = Path.Pident id in
-  g := { !g with paths = add lid (kind, path) !g.paths }
+let pp_map fmt t =
+  let pp_sep fmt () = Format.fprintf fmt ";@ " in
+  Format.fprintf fmt "%a"
+    (Format.pp_print_seq ~pp_sep Lid_trie.pp_lid_paths)
+    (Lid_map.to_seq t)
