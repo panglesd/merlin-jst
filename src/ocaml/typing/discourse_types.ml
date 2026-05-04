@@ -33,7 +33,7 @@ end
 module Paths = Set.Make (Item)
 
 let pp_paths ppf t =
-  let pp_sep ppf () = Format.fprintf ppf ";@;" in
+  let pp_sep ppf () = Format.fprintf ppf ";@ " in
   let paths = Paths.elements t |> List.map (fun (_, p) -> p) in
   Format.pp_print_list ~pp_sep Path.print ppf paths
 
@@ -44,7 +44,7 @@ module Lid_trie = struct
 
   let pp_paths fmt paths =
     let open Format in
-    fprintf fmt "[%a]" pp_paths paths
+    fprintf fmt "@[<1>[%a]@]" pp_paths paths
 
   let rec pp fmt (Trie (paths, tries)) =
     let open Format in
@@ -140,7 +140,7 @@ module Lid_trie = struct
     aux 0 t
 
   let pp_lid_paths ppf (lid, paths) =
-    Format.fprintf ppf "%a %a" Pprintast.longident lid pp_paths paths
+    Format.fprintf ppf "@[<2>%a@ %a@]" Pprintast.longident lid pp_paths paths
   let pp_seq fmt t =
     let pp_sep fmt () = Format.fprintf fmt ";@ " in
     Format.fprintf fmt "%a"

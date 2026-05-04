@@ -48,7 +48,36 @@ open Discourse_types
 let log_section = "discourse"
 let { Logger.log } = Logger.for_section log_section
 
-let get () = !g
+(* High-level recap log: fires on every [get ()] with the final discourse,
+   so regression diffs of D show up just by enabling this section. *)
+let recap_log_section = "discourse-recap"
+let { Logger.log = log_recap } = Logger.for_section recap_log_section
+
+let pp_d fmt d =
+  let open Format in
+  let pp_sep fmt () = fprintf fmt ";@ " in
+  let pp_lid_set fmt set =
+    fprintf fmt "@[<1>[%a]@]"
+      (pp_print_list ~pp_sep Pprintast.longident)
+      (Lid_set.elements set)
+  in
+  let pp_substs_binding fmt (path, lids) =
+    fprintf fmt "@[<2>%a ->@ %a@]" Path.print path pp_lid_set lids
+  in
+  let pp_substs fmt map =
+    if Path.Map.is_empty map then fprintf fmt "[]"
+    else
+      fprintf fmt "@[<v>[%a]@]"
+        (pp_print_list ~pp_sep pp_substs_binding)
+        (Path.Map.bindings map)
+  in
+  fprintf fmt
+    "@[<v 2>Discourse {@;size = %i;@;paths =@ %a;@;substs =@ %a@;<-2>}@]"
+    (Lid_trie.size d.paths) pp d.paths pp_substs d.substs
+
+let get () =
+  log_recap ~title:"D" "Final D:\n%a" Logger.fmt (Fun.flip pp_d !g);
+  !g
 let set v = g := v
 let reset () = g := empty_discourse
 
@@ -83,9 +112,7 @@ let fold_on_common_lid_and_path_segments ~init ~kind ~f (lid, path) =
     | _ -> acc
   in
   aux init kind (lid, path)
-let debug_print fmt =
-  Format.fprintf fmt "Size: %i@;%a@;%a" (Lid_trie.size !g.paths) pp !g.paths
-    pp_substs !g.substs
+let debug_print fmt = pp_d fmt !g
 
 let log_usage ?loc kind path =
   log ~title:"use" "Use %a\n%!" Logger.fmt (fun fmt ->
