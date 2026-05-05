@@ -85,9 +85,23 @@ open Shape.Sig_component_kind
 open Discourse_types
 
 module U = struct
+  module Disambiguate_id : sig
+    type t
+    val get_id : unit -> t
+    val compare : t -> t -> int
+  end = struct
+    type t = int
+    let get_id =
+      let cpt = ref 0 in
+      fun () ->
+        incr cpt;
+        !cpt
+
+    let compare = Int.compare
+  end
   type u_item =
     { item : Item.t;
-      env : Env.t option
+      env : Env.t option;
           (* Items added by "defined" rules (U2 and U3) do not need an env, as
              they are in the compilation unit (and so U1 will add all paths
              mentioned in them). TODO: Is that true for U3?
@@ -95,6 +109,12 @@ module U = struct
              Items added by the "used" rule (U1) need an environment, to be able
              to find them later in the translation U -> D, when applying D rules
              such as D4, D6, D8, ... *)
+      disambiguator : Disambiguate_id.t
+          (* We cannot compare two env with a different env, in a way that it
+             makes an order (id we have transitivity, antisymetry, ...).
+
+             So when we would need to do that, we reach out to a disambigator
+             id. *)
     }
   module ItemSet = Set.Make (struct
     type t = u_item
@@ -105,14 +125,10 @@ module U = struct
       | Some _, None -> -1
       | None, Some _ -> 1
       | Some env1, Some env2 when env1 == env2 -> Item.compare i1.item i2.item
-      (* This breaks the antisymmetry of order. TODO: is it a big deal?
-
-         Maybe, the exact same path in different envs needs only to be added
-         once (any env allowing to find the item will find the same item)
-
-         Ideally, we have no path duplicate, and prefer the ones with env to the
-         one without. *)
-      | Some _, Some _ -> -1
+      (* In order to keep order properties from compare, in case where we cannot
+         compare existing env, we disambiguate with the ID. *)
+      | Some _, Some _ ->
+        Disambiguate_id.compare i1.disambiguator i2.disambiguator
   end)
 
   type u =
@@ -260,7 +276,13 @@ module U = struct
       | `File -> "defined in current file"
       | `Open -> "brough in scope by an open");
     let discourse = !g in
-    g := add_item lid { item = (kind, path); env = None } discourse
+    g :=
+      add_item lid
+        { item = (kind, path);
+          env = None;
+          disambiguator = Disambiguate_id.get_id ()
+        }
+        discourse
 
   (* TODO: ??: It is not clear to me how the define functions are supposed to be
      called, to avoid duplicates, given that [define_module] will recurse. Do we
@@ -372,7 +394,12 @@ module U = struct
       (* TODO: this try-with is still there but the thing that can cause an
          exception was moved during the refactor. Check that there is a tru-with
          where the code was moved, or add it *)
-      add_item lid { item = (kind, path); env = Some env } acc
+      add_item lid
+        { item = (kind, path);
+          env = Some env;
+          disambiguator = Disambiguate_id.get_id ()
+        }
+        acc
     in
     fold_on_common_lid_and_path_segments ~init:t ~kind ~f (lid.txt, path)
 
@@ -575,7 +602,12 @@ module D = struct
           (* TODO: Check, this might not be the same as the code before the
              rebase. *)
           let u_next =
-            U.add_item lid { item = (Module, path'); env = Some env } u_next
+            U.add_item lid
+              { item = (Module, path');
+                env = Some env;
+                disambiguator = U.Disambiguate_id.get_id ()
+              }
+              u_next
             (* add_path_to_discourse env { paths; substs } Module lid path'  *)
           in
           (* TODO: refactor [substs] below that with [add_substs] *)

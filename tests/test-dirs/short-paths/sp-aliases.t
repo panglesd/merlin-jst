@@ -43,11 +43,11 @@
   # discourse-verbose - D2
   D2: prev in U so in D (kind: type, path: prev/6[3])
   # discourse-verbose - D2
-  D2: t in U so in D (kind: type, path: t/7[4])
+  D2: t in U so in D (kind: type, path: t/4[1])
   # discourse-verbose - D6
   D6: merging discourse of type t
   # discourse-verbose - D2
-  D2: t in U so in D (kind: type, path: t/4[1])
+  D2: t in U so in D (kind: type, path: t/7[4])
   # discourse-verbose - D6
   D6: merging discourse of type t
   # discourse-verbose - D2
@@ -114,8 +114,8 @@
       [{item = (type, prev/6[3]); env = with env};
        {item = (type, prev/6[3]); env = without env}];
     t ->
-      [{item = (type, t/7[4]); env = with env};
-       {item = (type, t/4[1]); env = with env};
+      [{item = (type, t/4[1]); env = with env};
+       {item = (type, t/7[4]); env = with env};
        {item = (type, t/4[1]); env = without env};
        {item = (type, t/7[4]); env = without env}];
     X.err -> [{item = (value, X/12[2].err); env = without env}];
