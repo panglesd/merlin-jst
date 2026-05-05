@@ -170,6 +170,10 @@ module U = struct
         | Some set -> Some (ItemSet.add item set))
       item_set
 
+  let add_item lid item u =
+    let u_paths = add_item_set lid item u.u_paths in
+    { u with u_paths }
+
   let empty_u : u =
     { u_paths = Lid_map.empty; substs = Path.Map.empty; discourse = empty }
   let g = Local_store.s_ref empty_u
@@ -256,11 +260,7 @@ module U = struct
       | `File -> "defined in current file"
       | `Open -> "brough in scope by an open");
     let discourse = !g in
-    g :=
-      { discourse with
-        u_paths =
-          add_item_set lid { item = (kind, path); env = None } discourse.u_paths
-      }
+    g := add_item lid { item = (kind, path); env = None } discourse
 
   (* TODO: ??: It is not clear to me how the define functions are supposed to be
      called, to avoid duplicates, given that [define_module] will recurse. Do we
@@ -372,12 +372,7 @@ module U = struct
       (* TODO: this try-with is still there but the thing that can cause an
          exception was moved during the refactor. Check that there is a tru-with
          where the code was moved, or add it *)
-      try
-        let u_paths =
-          add_item_set lid { item = (kind, path); env = Some env } acc.u_paths
-        in
-        { acc with u_paths }
-      with Not_found | Env.Error (Lookup_error _) -> acc
+      add_item lid { item = (kind, path); env = Some env } acc
     in
     fold_on_common_lid_and_path_segments ~init:t ~kind ~f (lid.txt, path)
 
@@ -580,10 +575,7 @@ module D = struct
           (* TODO: Check, this might not be the same as the code before the
              rebase. *)
           let u_next =
-            U.use_module env
-              { Location.txt = lid; loc = Location.none }
-              (* TODO: sort out the location issue *)
-              path' u_next
+            U.add_item lid { item = (Module, path'); env = Some env } u_next
             (* add_path_to_discourse env { paths; substs } Module lid path'  *)
           in
           (* TODO: refactor [substs] below that with [add_substs] *)
