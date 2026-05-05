@@ -35,14 +35,10 @@
   # discourse-verbose - U2
   U2: value X.err [X/12[2].err] defined in current file
   # discourse-verbose - D2
-  D2: X in U so in D (kind: module, path: X/12[2])
-  # discourse-verbose - D2
   D2: prev in U so in D (kind: type, path: prev/6[3])
   # discourse-verbose - D6
   D6: merging discourse of type prev
   # discourse-verbose - D2
-  D2: prev in U so in D (kind: type, path: prev/6[3])
-  # discourse-verbose - D2
   D2: t in U so in D (kind: type, path: t/4[1])
   # discourse-verbose - D6
   D6: merging discourse of type t
@@ -50,16 +46,6 @@
   D2: t in U so in D (kind: type, path: t/7[4])
   # discourse-verbose - D6
   D6: merging discourse of type t
-  # discourse-verbose - D2
-  D2: t in U so in D (kind: type, path: t/4[1])
-  # discourse-verbose - D2
-  D2: t in U so in D (kind: type, path: t/7[4])
-  # discourse-verbose - D2
-  D2: X.err in U so in D (kind: value, path: X/12[2].err)
-  # discourse-verbose - D2
-  D2: X.prev in U so in D (kind: type, path: X/12[2].prev)
-  # discourse-verbose - D2
-  D2: X.t in U so in D (kind: type, path: X/12[2].t)
   {
     "class": "return",
     "value": [
@@ -109,18 +95,10 @@
   # discourse-recap - U
   U at start of D.of_U:
   { u_paths =
-    [X -> [{item = (module, X/12[2]); env = without env}];
-    prev ->
-      [{item = (type, prev/6[3]); env = with env};
-       {item = (type, prev/6[3]); env = without env}];
+    [prev -> [{item = (type, prev/6[3]); env = with env}];
     t ->
       [{item = (type, t/4[1]); env = with env};
-       {item = (type, t/7[4]); env = with env};
-       {item = (type, t/4[1]); env = without env};
-       {item = (type, t/7[4]); env = without env}];
-    X.err -> [{item = (value, X/12[2].err); env = without env}];
-    X.prev -> [{item = (type, X/12[2].prev); env = without env}];
-    X.t -> [{item = (type, X/12[2].t); env = without env}]];
+       {item = (type, t/7[4]); env = with env}]];
     substs =
     [] }
   # discourse-recap - D

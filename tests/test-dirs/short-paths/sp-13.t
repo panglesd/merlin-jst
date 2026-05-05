@@ -94,10 +94,7 @@ This mocks the Async --include--> Async_kernel --exports--> Deferred
   U at start of D.of_U:
   { u_paths =
     [Async -> [{item = (module, Async!); env = with env}];
-    Deferred -> [{item = (module, Async!.Deferred); env = without env}];
-    Let_syntax ->
-      [{item = (module, Async!.Let_syntax); env = with env};
-       {item = (module, Async!.Let_syntax); env = without env}];
+    Let_syntax -> [{item = (module, Async!.Let_syntax); env = with env}];
     Let_syntax.return ->
       [{item = (value, Async!.Let_syntax.return); env = with env}]];
     substs =
@@ -279,10 +276,7 @@ Dump the discourse so regressions show up as a diff in this test:
   U at start of D.of_U:
   { u_paths =
     [Async -> [{item = (module, Async!); env = with env}];
-    Deferred -> [{item = (module, Async!.Deferred); env = without env}];
-    Let_syntax ->
-      [{item = (module, Async!.Let_syntax); env = with env};
-       {item = (module, Async!.Let_syntax); env = without env}];
+    Let_syntax -> [{item = (module, Async!.Let_syntax); env = with env}];
     Let_syntax.return ->
       [{item = (value, Async!.Let_syntax.return); env = with env}]];
     substs =

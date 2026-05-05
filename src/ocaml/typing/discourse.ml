@@ -275,14 +275,8 @@ module U = struct
       (match from with
       | `File -> "defined in current file"
       | `Open -> "brough in scope by an open");
-    let discourse = !g in
-    g :=
-      add_item lid
-        { item = (kind, path);
-          env = None;
-          disambiguator = Disambiguate_id.get_id ()
-        }
-        discourse
+    let item = (kind, path) in
+    g := { !g with discourse = Lid_trie.add lid item !g.discourse }
 
   (* TODO: ??: It is not clear to me how the define functions are supposed to be
      called, to avoid duplicates, given that [define_module] will recurse. Do we
