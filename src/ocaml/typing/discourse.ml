@@ -667,6 +667,7 @@ module D = struct
     consequences d u_next input
 
   let of_U u =
+    Hashtbl.reset already_used;
     log_recap ~title:"U" "U at start of D.of_U:\n%a" Logger.fmt
       (Fun.flip U.pp_u u);
     let is_empty u = Lid_map.is_empty u.U.u_paths in
