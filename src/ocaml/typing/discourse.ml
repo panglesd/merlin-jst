@@ -664,7 +664,31 @@ module D = struct
       Logger.fmt
       (Fun.flip Path.print (snd item.U.item));
     let d = { d with paths = Lid_trie.add longident item.item d.paths } in
-    consequences d u_next input
+    (* In some cases, [consequences] tries to load its own compilation unit,
+       which (inconsistently to our understanding) fails.
+
+       For instance, the two following queries on base's float raise a [Not
+       found] exception:
+
+       {[
+       /path/to/this/ocamlmerlin single type-enclosing -position '892:7' -index 0  -filename /path/to/base/src/float.ml < /path/to/base/src/float.ml
+
+       {"class":"exception","value":"Not_found
+       Raised at Ocaml_typing__Ident.find_same in file \"src/ocaml/typing/ident.ml\", line 305, characters 6-21
+       [...]
+       Called from Ocaml_typing__Discourse.D.module_consequences in file \"src/ocaml/typing/discourse.ml\", line 574, characters 15-44
+       [...]
+       ","notifications":[],"timing":{"clock":326,"cpu":234,"query":20,"pp":0,"reader":7,"ppx":41,"typer":166,"error":0},"heap_mbytes":41,"cache":{"reader_phase":"miss","ppx_phase":"miss","typer":"miss","cmt":{"hit":0,"miss":0},"cms":{"hit":0,"miss":0},"cmi":{"hit":0,"miss":53},"document_overrides_phase":"miss","locate_overrides_phase":"miss"},"query_num":0}
+       ]}
+
+       and
+
+       {[
+       /path/to/this/ocamlmerlin server type-enclosing -position '201:18' -index 0  -filename /path/to/base/src/int32.ml < /path/to/base/src/int32.ml
+       ]}
+    *)
+    try consequences d u_next input
+    with Not_found | Env.Error (Lookup_error _) -> (d, u_next)
 
   let of_U u =
     Hashtbl.reset already_used;
