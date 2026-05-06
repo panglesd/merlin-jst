@@ -214,13 +214,11 @@ module U = struct
 
   let record_usages = Config.merlin
 
-  (* TODO: do that in D.of_U *)
   let add_initial_discourse () =
     let d = !g in
     g := { d with discourse = Lid_trie.union (Predef.discourse ()) d.discourse }
 
   let fold_on_common_lid_and_path_segments ~init ~kind ~f (lid, path) =
-    (* TODO : is it always true that paths prefixes are always Module? Yes!? *)
     let rec aux acc kind ((lid, path) : Longident.t * Path.t) =
       let acc = f acc kind (lid, path) in
       match (lid, path) with
@@ -291,12 +289,6 @@ module U = struct
       | `Open -> "brough in scope by an open");
     let item = (kind, path) in
     g := { !g with discourse = Lid_trie.add lid item !g.discourse }
-
-  (* TODO: ??: It is not clear to me how the define functions are supposed to be
-     called, to avoid duplicates, given that [define_module] will recurse. Do we
-     only call [define_module] on the "compilation unit" module? It seems that
-     [define_{type;module;modtype}] are called from the outside, but not
-     [define_value] *)
 
   let rec define_signature ?(from = `File) ?root_path ?root_lid sg =
     if record_usages then
@@ -375,7 +367,6 @@ module U = struct
           (* TODO: do *) ())
       (Subst.Lazy.force_signature_once sg)
 
-  (* TODO This should be done lazyly*)
   let open_module env path =
     if record_usages then begin
       log ~title:"U3" "U3: open module %a" Logger.fmt (fun fmt ->
@@ -405,9 +396,6 @@ module U = struct
           Format.pp_print_string fmt (Shape.Sig_component_kind.to_string kind))
         Logger.fmt (Fun.flip Path.print path) Logger.fmt
         (fun fmt -> Location.print_loc fmt loc);
-      (* TODO: this try-with is still there but the thing that can cause an
-         exception was moved during the refactor. Check that there is a tru-with
-         where the code was moved, or add it *)
       add_item lid
         { item = (kind, path);
           env = Some env;
@@ -578,9 +566,9 @@ module D = struct
       (paths, substs)
       (Subst.Lazy.force_signature_once sig_)
 
-  (* TODO: see if we can do better with the accumulator ([d] and [u_next]):
-     sometimes it is represented as a couple and sometimes as two distinct
-     arguments, preventing the more readable folds *)
+  (* TODO: see if we can do better with the accumulator ([d] and
+     [u_next]): sometimes it is represented as a couple and sometimes as two
+     distinct arguments, preventing the more readable folds *)
 
   let module_consequences { paths; substs } u_next env lid path :
       discourse * U.u =
@@ -693,6 +681,8 @@ module D = struct
       (Shape.Sig_component_kind.to_string (fst item.U.item))
       Logger.fmt
       (Fun.flip Path.print (snd item.U.item));
+    (* TODO: If item is already in paths we should skip adding it (and more
+       importantly, skip the consequences!) *)
     let d = { d with paths = Lid_trie.add longident item.item d.paths } in
     (* In some cases, [consequences] tries to load its own compilation unit,
        which (inconsistently to our understanding) fails.
@@ -716,7 +706,9 @@ module D = struct
        {[
        /path/to/this/ocamlmerlin server type-enclosing -position '201:18' -index 0  -filename /path/to/base/src/int32.ml < /path/to/base/src/int32.ml
        ]}
-    *)
+
+       TODO: find why there is such a self-module added/why it sometimes load
+       sometimes raises. *)
     try consequences d u_next input
     with Not_found | Env.Error (Lookup_error _) -> (d, u_next)
 
