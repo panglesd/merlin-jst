@@ -476,7 +476,7 @@ let shorten ~env ~initial ~canon_path kind =
   in
 
   (* Empty the discourse *)
-  Discourse.set Discourse.empty_u;
+  Discourse.set { Discourse.empty_u with substs = discourse.substs };
 
   (* Update the persistent queues and table *)
   priority_queue := queue';
