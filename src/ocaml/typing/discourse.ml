@@ -549,6 +549,7 @@ module D = struct
             match md.md_type with
             | Mty_alias path' ->
               let lid = ldot id in
+              let path' = Env.normalize_module_path None env path' in
               log ~title:"D12"
                 "D12: subst %a -> %a (sub-component is a module alias)"
                 Logger.fmt
