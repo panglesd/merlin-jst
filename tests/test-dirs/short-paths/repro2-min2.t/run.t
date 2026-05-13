@@ -18,43 +18,6 @@ From usage.ml the type of M.B.f in usage.ml can be described as:
 So `M.A.t` is the clearly preferred candidate — *if* it's in D. The bug is that
 it isn't.
 
-Rules-only derivation
-=====================
-
-| U  = { M, M.B, M.B.f }       (from U1)
-
-D2 / D3 / D4 / D5 contribute:
-
-- D2:  M, M.B, M.B.f in D.
-- D3:  M is a module in U → M.A and M.B in D.
-- D3:  M.B is a module in U → M.B.f in D.
-- D4:  M.B.f's value description uses `Priv__a.t` → Priv__a.t in D.
-- D5:  M's module description mentions `open Layer`, `module A = A`, `module B = B` → Layer, Layer.A, Layer.B in D.
-
-D11 lifts module prefixes:
-
-- Priv__a.t includes Priv__a → add Priv__a to D.
-
-D12 chases module aliases (fix-point):
-
-- M.A is alias to Layer.A; Layer.A is alias to Priv__a.
-- Step 1: m = Layer.A, n = Priv__a. p = Priv__a.t (in D) includes Priv__a. Substitute → Layer.A.t. Add.
-- Step 2: m = M.A, n = Layer.A. p = Layer.A.t (just added) includes Layer.A. Substitute → M.A.t. Add.
-
-Fixpoint reached. D contains M.A.t.
-
-What the implementation does instead
-====================================
-
-The implementation only records D12 as a one-step subst
-`Layer.A -> [M.A]` from `d3_rule` processing M's signature. At print
-time, `apply_substitutions_fixpoint` looks for a trie key whose prefix
-matches `Layer.A` — but the only Type-bearing trie key is `Priv__a.t`
-(from D4), whose first segment is `Priv__a`, not `Layer`. The subst
-never fires, `M.A.t` never enters D, and the only remaining candidate
-is the heavily-penalised `Priv__a.t` (cost 11), which is what gets
-printed.
-
 Build the priv library (a, b, layer all in priv/).
   $ mkdir -p priv
 
