@@ -155,46 +155,8 @@ This mocks the Async --include--> Async_kernel --exports--> Deferred
   # discourse-recap - D
   Final D:
   Discourse {
-    size = 116;
+    size = 40;
     paths =
-    unit [unit/7!];
-    string [string/19!];
-    nativeint [nativeint/13!];
-    lexing_position [lexing_position/22!];
-    int8x64 [int8x64/42!];
-    int8x32 [int8x32/35!];
-    int8x16 [int8x16/28!];
-    int8 [int8/14!];
-    int64x8 [int64x8/45!];
-    int64x4 [int64x4/38!];
-    int64x2 [int64x2/31!];
-    int64 [int64/17!];
-    int32x8 [int32x8/37!];
-    int32x4 [int32x4/30!];
-    int32x16 [int32x16/44!];
-    int32 [int32/16!];
-    int16x8 [int16x8/29!];
-    int16x32 [int16x32/43!];
-    int16x16 [int16x16/36!];
-    int16 [int16/15!];
-    int [int/1!];
-    floatarray [floatarray/21!];
-    float64x8 [float64x8/48!];
-    float64x4 [float64x4/41!];
-    float64x2 [float64x2/34!];
-    float32x8 [float32x8/40!];
-    float32x4 [float32x4/33!];
-    float32x16 [float32x16/47!];
-    float32 [float32/5!];
-    float16x8 [float16x8/32!];
-    float16x32 [float16x32/46!];
-    float16x16 [float16x16/39!];
-    float [float/4!];
-    extension_constructor [extension_constructor/20!];
-    exn [exn/8!];
-    char [char/2!];
-    bytes [bytes/3!];
-    bool [bool/6!];
     Let_syntax
       [Async!.Let_syntax; Async_kernel__Deferred!.Let_syntax.Let_syntax];
     Let_syntax.return
@@ -355,46 +317,8 @@ Dump the discourse so regressions show up as a diff in this test:
   # discourse-recap - D
   Final D:
   Discourse {
-    size = 116;
+    size = 40;
     paths =
-    unit [unit/7!];
-    string [string/19!];
-    nativeint [nativeint/13!];
-    lexing_position [lexing_position/22!];
-    int8x64 [int8x64/42!];
-    int8x32 [int8x32/35!];
-    int8x16 [int8x16/28!];
-    int8 [int8/14!];
-    int64x8 [int64x8/45!];
-    int64x4 [int64x4/38!];
-    int64x2 [int64x2/31!];
-    int64 [int64/17!];
-    int32x8 [int32x8/37!];
-    int32x4 [int32x4/30!];
-    int32x16 [int32x16/44!];
-    int32 [int32/16!];
-    int16x8 [int16x8/29!];
-    int16x32 [int16x32/43!];
-    int16x16 [int16x16/36!];
-    int16 [int16/15!];
-    int [int/1!];
-    floatarray [floatarray/21!];
-    float64x8 [float64x8/48!];
-    float64x4 [float64x4/41!];
-    float64x2 [float64x2/34!];
-    float32x8 [float32x8/40!];
-    float32x4 [float32x4/33!];
-    float32x16 [float32x16/47!];
-    float32 [float32/5!];
-    float16x8 [float16x8/32!];
-    float16x32 [float16x32/46!];
-    float16x16 [float16x16/39!];
-    float [float/4!];
-    extension_constructor [extension_constructor/20!];
-    exn [exn/8!];
-    char [char/2!];
-    bytes [bytes/3!];
-    bool [bool/6!];
     Let_syntax
       [Async!.Let_syntax; Async_kernel__Deferred!.Let_syntax.Let_syntax];
     Let_syntax.return

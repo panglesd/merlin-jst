@@ -16,6 +16,7 @@
   >     include Stdlib.Domain
   >   end
   > end
+  warning: here-document at line 1 delimited by end-of-file (wanted `EOF')
 
   $ $OCAMLC -c shadow_stdlib.ml import0.ml
 

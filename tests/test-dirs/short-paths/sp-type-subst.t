@@ -10,6 +10,7 @@
   >   end
   > end
   > EOF 
+  warning: here-document at line 1 delimited by end-of-file (wanted `EOF')
 
 Surprisingly, in Printtyp, the ident for the inner t has a different stamp...
 (306). It's not clear how we could have the correct ident in the discourse.
@@ -34,6 +35,7 @@ and not `Uchar.utf_decode`. Removing the `type uch.. := int` fixes the issue.
   >   end
   > end
   > EOF 
+  warning: here-document at line 1 delimited by end-of-file (wanted `EOF')
 
 FIXME Here we also expect is_valid: t -> bool
   $ $MERLIN single type-enclosing -position 11:1 -short-paths \

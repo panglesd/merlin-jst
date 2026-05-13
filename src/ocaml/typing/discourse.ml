@@ -215,8 +215,9 @@ module U = struct
   let record_usages = Config.merlin
 
   let add_initial_discourse () =
-    let d = !g in
-    g := { d with discourse = Lid_trie.union (Predef.discourse ()) d.discourse }
+    (* let d = !g in *)
+    (* g := { d with discourse = Lid_trie.union (Predef.discourse ()) d.discourse } *)
+    ()
 
   let fold_on_common_lid_and_path_segments ~init ~kind ~f (lid, path) =
     let rec aux acc kind ((lid, path) : Longident.t * Path.t) =
