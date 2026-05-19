@@ -498,6 +498,30 @@ module D = struct
      Currently the handling of aliases can create loops. *)
   let already_used : (Path.t, unit) Hashtbl.t = Hashtbl.create 256
 
+  let follow_aliases_adding_subst log_detail env substs path lid =
+    let add_to_substs substs path lid =
+      log ~title:"D12" "D12: subst %a -> %a (%s)" Logger.fmt
+        (Fun.flip Path.print path) Logger.fmt
+        (Fun.flip Pprintast.longident lid)
+        log_detail;
+      Path.Map.update path
+        (function
+          | None -> Some (Lid_set.singleton lid)
+          | Some lids -> Some (Lid_set.add lid lids))
+        substs
+    in
+    let rec loop substs path =
+      match path with
+      | Path.Pident id when Ident.is_global id -> substs
+      | _ -> (
+        match Env.find_module_lazy path env with
+        | { md_type = Mty_alias path1 } ->
+          let substs = add_to_substs substs path1 lid in
+          loop substs path1
+        | _ -> add_to_substs substs path lid)
+    in
+    loop substs path
+
   let special_rule_for_aliases env { paths; substs } u_next path alias_lid =
     try
       let path', _ = Env.find_module_by_name_lazy alias_lid.Location.txt env in
@@ -549,29 +573,8 @@ module D = struct
             match md.md_type with
             | Mty_alias path' ->
               let lid = ldot id in
-              let add_to_substs substs path lid =
-                log ~title:"D12"
-                  "D12: subst %a -> %a (sub-component is a module alias)"
-                  Logger.fmt (Fun.flip Path.print path) Logger.fmt
-                  (Fun.flip Pprintast.longident lid);
-                Path.Map.update path
-                  (function
-                    | None -> Some (Lid_set.singleton lid)
-                    | Some lids -> Some (Lid_set.add lid lids))
-                  substs
-              in
-              let rec loop substs path =
-                match path with
-                | Path.Pident id when Ident.is_global id -> substs
-                | _ -> (
-                  match Env.find_module_lazy path env with
-                  | { md_type = Mty_alias path1 } ->
-                    let substs = add_to_substs substs path1 lid in
-                    loop substs path1
-                  | _ -> add_to_substs substs path lid)
-              in
-
-              loop substs path'
+              follow_aliases_adding_subst "sub-component is a module alias" env
+                substs path' lid
             | _ -> substs
           in
           (paths, substs)
@@ -612,6 +615,9 @@ module D = struct
 
              We accumulate such substitution and will apply them when shortening
              a path. *)
+          let substs =
+            follow_aliases_adding_subst "Mty_alias target" env substs path' lid
+          in
           (* We have to follow aliases to be able to add module components to
              the discourse.
 
@@ -629,19 +635,7 @@ module D = struct
               u_next
             (* add_path_to_discourse env { paths; substs } Module lid path'  *)
           in
-          (* TODO: refactor [substs] below that with [add_substs] *)
-          let substs =
-            log ~title:"D12" "D12: subst %a -> %a (Mty_alias target normalized)"
-              Logger.fmt
-              (Fun.flip Path.print path')
-              Logger.fmt
-              (Fun.flip Pprintast.longident lid);
-            Path.Map.update path'
-              (function
-                | None -> Some (Lid_set.singleton lid)
-                | Some lids -> Some (Lid_set.add lid lids))
-              substs
-          in
+
           ((paths, substs), u_next)
         | Mty_signature sig_ ->
           (* D3. If a module path is in U then all the paths of its subcomponents
