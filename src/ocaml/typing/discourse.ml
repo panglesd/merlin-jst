@@ -561,12 +561,16 @@ module D = struct
                   substs
               in
               let rec loop substs path =
-                match Env.find_module_lazy path env with
-                | { md_type = Mty_alias path1 } ->
-                  let substs = add_to_substs substs path1 lid in
-                  loop substs path1
-                | _ -> add_to_substs substs path lid
+                match path with
+                | Path.Pident id when Ident.is_global id -> substs
+                | _ -> (
+                  match Env.find_module_lazy path env with
+                  | { md_type = Mty_alias path1 } ->
+                    let substs = add_to_substs substs path1 lid in
+                    loop substs path1
+                  | _ -> add_to_substs substs path lid)
               in
+
               loop substs path'
             | _ -> substs
           in
