@@ -549,18 +549,25 @@ module D = struct
             match md.md_type with
             | Mty_alias path' ->
               let lid = ldot id in
-              let path' = Env.normalize_module_path None env path' in
-              log ~title:"D12"
-                "D12: subst %a -> %a (sub-component is a module alias)"
-                Logger.fmt
-                (Fun.flip Path.print path')
-                Logger.fmt
-                (Fun.flip Pprintast.longident lid);
-              Path.Map.update path'
-                (function
-                  | None -> Some (Lid_set.singleton lid)
-                  | Some lids -> Some (Lid_set.add lid lids))
-                substs
+              let add_to_substs substs path lid =
+                log ~title:"D12"
+                  "D12: subst %a -> %a (sub-component is a module alias)"
+                  Logger.fmt (Fun.flip Path.print path) Logger.fmt
+                  (Fun.flip Pprintast.longident lid);
+                Path.Map.update path
+                  (function
+                    | None -> Some (Lid_set.singleton lid)
+                    | Some lids -> Some (Lid_set.add lid lids))
+                  substs
+              in
+              let rec loop substs path =
+                match Env.find_module_lazy path env with
+                | { md_type = Mty_alias path1 } ->
+                  let substs = add_to_substs substs path1 lid in
+                  loop substs path1
+                | _ -> add_to_substs substs path lid
+              in
+              loop substs path'
             | _ -> substs
           in
           (paths, substs)
