@@ -51,4 +51,4 @@ Usage
 
   $ $MERLIN single type-enclosing -log-file log -position 1:40 -index 0 -open Repro2_standalone__ \
   > -filename usage/usage.ml <usage/usage.ml | jq '.value[0].type'
-  "Repro2_priv.Topic.t -> Repro2_main.Topic_name.t option"
+  "Repro2_main.Topic.t -> Repro2_main.Topic_name.t option"

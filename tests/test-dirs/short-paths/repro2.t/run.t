@@ -174,7 +174,9 @@ expected `Repro2_main.Topic.t -> Repro2_main.Topic_name.t option`.
     Repro2_main.Topic [Repro2_main!.Topic];
     substs =
     [Repro2_types__Topic! -> [Repro2_main.Topic];
-    Repro2_types__Topic_name! -> [Repro2_main.Topic_name]]
+    Repro2_types__Topic_name! -> [Repro2_main.Topic_name];
+    Repro2_types__!.Topic -> [Repro2_main.Topic];
+    Repro2_types__!.Topic_name -> [Repro2_main.Topic_name]]
     }
   # discourse-recap - U
   U at start of D.of_U:
@@ -182,7 +184,9 @@ expected `Repro2_main.Topic.t -> Repro2_main.Topic_name.t option`.
     [];
     substs =
     [Repro2_types__Topic! -> [Repro2_main.Topic];
-    Repro2_types__Topic_name! -> [Repro2_main.Topic_name]] }
+    Repro2_types__Topic_name! -> [Repro2_main.Topic_name];
+    Repro2_types__!.Topic -> [Repro2_main.Topic];
+    Repro2_types__!.Topic_name -> [Repro2_main.Topic_name]] }
   # discourse-recap - D
   Final D:
   Discourse {
@@ -191,7 +195,9 @@ expected `Repro2_main.Topic.t -> Repro2_main.Topic_name.t option`.
     ;
     substs =
     [Repro2_types__Topic! -> [Repro2_main.Topic];
-    Repro2_types__Topic_name! -> [Repro2_main.Topic_name]]
+    Repro2_types__Topic_name! -> [Repro2_main.Topic_name];
+    Repro2_types__!.Topic -> [Repro2_main.Topic];
+    Repro2_types__!.Topic_name -> [Repro2_main.Topic_name]]
     }
   # discourse-recap - U
   U at start of D.of_U:
@@ -199,7 +205,9 @@ expected `Repro2_main.Topic.t -> Repro2_main.Topic_name.t option`.
     [];
     substs =
     [Repro2_types__Topic! -> [Repro2_main.Topic];
-    Repro2_types__Topic_name! -> [Repro2_main.Topic_name]] }
+    Repro2_types__Topic_name! -> [Repro2_main.Topic_name];
+    Repro2_types__!.Topic -> [Repro2_main.Topic];
+    Repro2_types__!.Topic_name -> [Repro2_main.Topic_name]] }
   # discourse-recap - D
   Final D:
   Discourse {
@@ -208,6 +216,8 @@ expected `Repro2_main.Topic.t -> Repro2_main.Topic_name.t option`.
     ;
     substs =
     [Repro2_types__Topic! -> [Repro2_main.Topic];
-    Repro2_types__Topic_name! -> [Repro2_main.Topic_name]]
+    Repro2_types__Topic_name! -> [Repro2_main.Topic_name];
+    Repro2_types__!.Topic -> [Repro2_main.Topic];
+    Repro2_types__!.Topic_name -> [Repro2_main.Topic_name]]
     }
-  "Repro2_types__.Topic.t -> Repro2_main.Topic_name.t option"
+  "Repro2_main.Topic.t -> Repro2_main.Topic_name.t option"
