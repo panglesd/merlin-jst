@@ -132,12 +132,6 @@ This mocks the Async --include--> Async_kernel --exports--> Deferred
       [{item = (module, Async_kernel__Deferred!); env = with env}]];
     substs =
     [] }
-  # discourse-recap - next_U
-  next_U (non-empty, looping):
-  { u_paths =
-    [Deferred -> [{item = (module, Async_kernel__Deferred!); env = with env}]];
-    substs =
-    [] }
   # discourse-recap - D
   Final D:
   Discourse {
@@ -341,12 +335,6 @@ Dump the discourse so regressions show up as a diff in this test:
     [Deferred -> [{item = (module, Async!.Deferred); env = with env}];
     Async_kernel.Deferred ->
       [{item = (module, Async_kernel__Deferred!); env = with env}]];
-    substs =
-    [] }
-  # discourse-recap - next_U
-  next_U (non-empty, looping):
-  { u_paths =
-    [Deferred -> [{item = (module, Async_kernel__Deferred!); env = with env}]];
     substs =
     [] }
   # discourse-recap - D

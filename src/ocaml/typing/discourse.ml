@@ -137,6 +137,9 @@ module U = struct
       discourse : Lid_trie.t
     }
 
+  let paths_union (ps1 : ItemSet.t Lid_map.t) (ps2 : ItemSet.t Lid_map.t) =
+    Lid_map.union (fun _key set1 set2 -> Some (ItemSet.union set1 set2)) ps1 ps2
+
   let pp_u fmt u =
     let open Format in
     let pp_sep fmt () = fprintf fmt ";@ " in
@@ -726,13 +729,20 @@ module D = struct
     log_recap ~title:"U" "U at start of D.of_U:\n%a" Logger.fmt
       (Fun.flip U.pp_u u);
     let is_empty u = Lid_map.is_empty u.U.u_paths in
-    let rec add_u_to_d d u =
+    let has_been_added lid item old_u =
+      match Lid_map.find_opt lid old_u with
+      | None -> false
+      | Some set -> U.ItemSet.mem item set
+    in
+    let rec add_u_to_d d u old_u =
       let d, u_next =
         Lid_map.to_seq u.U.u_paths
         |> Seq.fold_left
              (fun (d, u_next) (lid, (x : U.ItemSet.t)) ->
                U.ItemSet.fold
-                 (fun item (d, u_next) -> add_from_u_to_d d u_next (lid, item))
+                 (fun item (d, u_next) ->
+                   if has_been_added lid item old_u then (d, u_next)
+                   else add_from_u_to_d d u_next (lid, item))
                  x (d, u_next))
              (d, U.empty_u)
       in
@@ -743,9 +753,14 @@ module D = struct
       else (
         log_recap ~title:"next_U" "next_U (non-empty, looping):\n%a" Logger.fmt
           (Fun.flip U.pp_u u_next);
-        add_u_to_d d u_next)
+        let old_u = U.paths_union u.u_paths old_u in
+        add_u_to_d d u_next old_u)
     in
-    let d = add_u_to_d { paths = u.U.discourse; substs = Path.Map.empty } u in
+    let d =
+      add_u_to_d
+        { paths = u.U.discourse; substs = Path.Map.empty }
+        u Lid_map.empty
+    in
     log_recap ~title:"D" "Final D:\n%a" Logger.fmt (Fun.flip pp_d d);
     d
 
